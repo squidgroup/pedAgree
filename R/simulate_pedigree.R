@@ -3,35 +3,33 @@
 ## what do we output - how do we incorporate alive individuals that don't breed or multiple measurements
 ## output pedigree and data structure?
 
-years = 5
-	n_females = 50
-	P_breed = 1
-	fecundity = 4 #number of oocytes
-	# age at fisrt repro
-	# age specific
-	# 
-	within_polyandry_rate = 0
-	between_polyandry_rate = 0
-	polgyny_rate = 0
-	P_fert = 1 # probably that oocytes are fertilised
-	juv_surv = 0.25
-	adult_surv = 0.5
-	migration = 0
-	constant_pop = TRUE 
-	known_age_structure = FALSE
+# years = 5
+# 	n_females = 50
+# 	P_breed = 1
+# 	fecundity = 4 #number of oocytes
+# 	# age at fisrt repro
+# 	# age specific
+# 	# 
+# 	within_polyandry_rate = 0
+# 	between_polyandry_rate = 0
+# 	polgyny_rate = 0
+# 	juv_surv = 0.25
+# 	adult_surv = 0.5
+# 	migration = 0
+# 	constant_pop = TRUE 
+# 	known_age_structure = FALSE
 
 simulate_pedigree <- function(
 	years = 5,
 	n_females = 50,
 	P_breed = 1,
-	fecundity = 4, #number of oocytes,
+	fecundity = 4, #number of zygotes,
 	# age at fisrt repro
 	# age specific
 	# 
 	within_polyandry_rate = 0,
 	between_polyandry_rate = 0,
 	polgyny_rate = 0,
-	P_fert = 1, # probably that oocytes are fertilised,
 	juv_surv = 0.25,
 	adult_surv = 0.5,
 	migration = 0,
@@ -40,7 +38,7 @@ simulate_pedigree <- function(
 
 options(stringsAsFactors=FALSE)
 
-	det_growth_rate <- (juv_surv * fecundity * P_fert)/2 + adult_surv + migration 
+	det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + migration 
 
 	v_as <- adult_surv * (1-adult_surv)
 	v_js <- juv_surv * (1-juv_surv)
@@ -82,7 +80,7 @@ options(stringsAsFactors=FALSE)
 		# print(length(breeding_females))
 
 		# number of offspring per female - random mating, equal sex ratio
-		# n_juv <- rpois(n_pair,fecundity*P_fert)
+		# n_juv <- rpois(n_pair,fecundity)
 		n_juv <- rep(fecundity,n_pair)
 
 		ped <- data.frame(

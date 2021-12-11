@@ -170,18 +170,21 @@ pre code {
 </div>
 
 
-<p>I think a nice approach for the core simulation is to have parameters that are things that can be estimated from a given pedigree (with columns of id, dam, sire and cohort). The nice things about this is that we can take a given pedigree, extract these parameters, simulate a bunch pedigrees from the parameters and then compare them back other metrics (number of half-sibs, parent-offspring links etc)</p>
+<p>I think a nice approach for the core simulation is to have parameters that are things that can be estimated from a given pedigree (with columns of id, dam, sire and cohort). The nice things about this is that we can take a given pedigree, extract these parameters, simulate a bunch pedigrees from the parameters and then compare them back other metrics (number of half-sibs, parent-offspring links etc), which will allow us to evaluate the simulations in some way.</p>
 <div id="current-assumptions" class="section level2">
 <h2>Current Assumptions</h2>
+<p>I think there is potential for these to change in future versions, but for now are fixed</p>
 <ul>
 <li>Random mating</li>
+<li>Equal sex ratio</li>
 <li>No selection</li>
 <li>No non-stochastic (e.g. between individual) variation in survival or fecundity</li>
-<li>Constant survival and fecundity (i.e. no age-specific vital rates, no senescence etc)</li>
+<li>Constant survival and fecundity (i.e. no age- or sex-specific vital rates, no senescence etc)</li>
 </ul>
 </div>
 <div id="basic-parameters" class="section level2">
 <h2>Basic parameters</h2>
+<p>These basically describe how big the simulation is going to be</p>
 <ul>
 <li>Number of years</li>
 <li>Starting number of females</li>
@@ -191,21 +194,34 @@ pre code {
 <h2>Vital rates</h2>
 <p>I think these are mainly going to affect the number of parent-offspring and sibling relationships</p>
 <ul>
-<li><strong>Fecundity</strong>: number of offspring per female</li>
-<li><strong>Juvenile survival</strong>: probability of survival from recording point until recruitment</li>
+<li><strong>Fecundity</strong>: number of offspring per female
+<ul>
+<li>Do we want this to vary, and if so how</li>
+</ul></li>
+<li><strong>Juvenile survival</strong>: probability of survival from recording point until (local) recruitment</li>
 <li><strong>Adult survival</strong>: probability of survival from one breeding season to the next</li>
-<li><strong>Migration</strong>: number of immigrants each year</li>
+<li><strong>Immigration</strong>: number of immigrants each year
+<ul>
+<li>easy to implement, hard to measure from a pedigree</li>
+</ul></li>
 <li><strong>Constant population size?</strong> Whether a constant number of individuals survive each year or whether population size is allowed to stochastically fluctuate</li>
 </ul>
+<div id="things-to-consider" class="section level3">
+<h3>Things to consider</h3>
+<ul>
+<li><strong>Probability of breeding</strong> (can also be thought of as a detection probability in a year - these are not possible to disentangled from a given pedigree)</li>
+<li><strong>Age at first reproduction?</strong> modal age?</li>
+<li>Could be combined as an age specific probability of breeding</li>
+</ul>
+</div>
 </div>
 <div id="mating-system" class="section level2">
 <h2>Mating system</h2>
 <p>I think these are mainly going to affect the number of full-sibs versus half-sibs</p>
 <ul>
-<li><strong>Probability of breeding</strong> (can also be thought of as a detection probability in a year - these are not possible to disentangled from a given pedigree)</li>
-<li><strong>Between-year polgyny</strong>: Probability of retaining the same ‘social male’ between years (if alive)</li>
-<li><strong>Within-year polygyny</strong>: Probability that ‘social male’ sires offspring, or a random male - essentially probability of EPP within a females offspring</li>
-<li><strong>Polygamy rate</strong> / male reproductive skew
+<li><strong>Between-year polyandry</strong>: Probability of retaining the same ‘social male’ between years (if alive)</li>
+<li><strong>Within-year polyandry</strong>: Probability that ‘social male’ sires offspring, or a random male - essentially probability of EPP within a females offspring</li>
+<li><strong>Polygyny rate</strong> / male reproductive skew
 <ul>
 <li>Thinking something like a beta distribution of probabilities that a male sires a brood, then social males are sampled with those probabilities</li>
 <li>how to extract from pedigree?
@@ -217,7 +233,6 @@ pre code {
 <li>problem - pedigrees only contain breeding individuals, so we don’t detect individuals that never breed. But what we extract from pedigree will be biased in the same way we are simulating pedigrees, so probably doesn’t matter.</li>
 <li>might also conflict with between-year polygyny?</li>
 </ul></li>
-<li><strong>Age at first reproduction?</strong> modal age?</li>
 </ul>
 </div>
 
