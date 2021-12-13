@@ -34,8 +34,10 @@ head(ped)
 
 
 ######
-## ----- Chick survival
+## ----- Juvenile survival
 ######
+
+## in order not to downward bias survival too much, maybe first work out modal age at first repro, and then exclude that many years off the end?
 
 chicks_to_recruit <- subset(ped,!(is.na(dam)&is.na(sire)) & cohort!=max(cohort, na.rm=TRUE))[,1]
 all_adults <- unique(c(ped[,"dam"],ped[,"sire"]))
@@ -109,7 +111,7 @@ female_cohort<-lapply(split(subset(ped,!is.na(dam))[,c("dam","sire","cohort")], 
 
 })
 
-ee[[100]] %in% juv_df$animal
+female_cohort[[100]] %in% juv_df$animal
 
 
 

@@ -2,7 +2,7 @@
 title: "Simulating Pedigrees"
 author: Joel Pick
 output: 
-  html_document
+  pdf_document
 ---
 I think a nice approach for the core simulation is to have parameters that are things that can be estimated from a given pedigree (with columns of id, dam, sire and cohort). The nice things about this is that we can take a given pedigree, extract these parameters, simulate a bunch pedigrees from the parameters and then compare them back other metrics (number of half-sibs, parent-offspring links etc), which will allow us to evaluate the simulations in some way.
 
@@ -22,7 +22,7 @@ These basically describe how big the simulation is going to be
 - Starting number of females
     
 ## Vital rates (implemented)
-These relate to the Leslie matrix, and generally to parameters associated with females
+Broadly these relate to the Leslie matrix, and are generally parameters associated with females
 
 - **Fecundity**: number of offspring (zygotes) per female
     - Do we want this to vary, and if so how. Poisson? Annual fecundity is often very under-dispersed. Conway-Maxwell Poisson is perhaps a good option
@@ -34,23 +34,19 @@ These relate to the Leslie matrix, and generally to parameters associated with f
 
 ### Extra vital rates like parameters to consider
 
-- **Probability of breeding** (can also be thought of as a detection probability in a year - these are not possible to disentangled from a given pedigree)
-- **Age at first reproduction?** Possibly as modal age.
+- **Probability of breeding** (not possible to disentangled from detection probability in a year in a given pedigree)
+- **Age at first reproduction** Possibly as modal age?
 - These two could be combined as an age specific probability of breeding
 
 
 ## Mating system (not implemented)
 I think we can describe the mating system with 3-4 parameters. The way I have thought about this is to assign each female a 'social' male. There are then 
 
-- **Within-year polyandry**: Probability that 'social male' sires offspring, or a random male - essentially probability of EPP within a females offspring
-
+- **Within-year polyandry**: Probability that 'social male' sires offspring, or a random male 
+    - This is essentially probability of EPP within a females offspring. If the concept of social male doesn't exist for a species, then the probability can be 0. If no EPP, then it can be 1.
+- **Between-year polyandry**: Probability of retaining the same 'social male' between years (if alive). 
+    - If social males don't exist, then setting Within-year polyandry above as 0, will make this parameter redundant
 - **Polygyny rate** / male reproductive skew
-    - Thinking something like a beta distribution of probabilities that a male sires a brood, then social males are sampled with those probabilities
-    - how to extract from pedigree?
-        - skew within years in repro success?
-    - new beta distribution every year?
-    - if same beta value between years, very few individuals will dominate pedigree - induce the appearance of selection when phenotypes are simulated?
-    - problem - pedigrees only contain breeding individuals, so we don't detect individuals that never breed. But what we extract from pedigree will be biased in the same way we are simulating pedigrees, so probably doesn't matter.
-    - might also conflict with between-year polygyny?
+    - I think this is the most complex part. I was thinking of something like there being a beta distribution of probabilities that a male sires a brood, then social males are sampled with those probabilities. Extra pair paternity are also sampled from those same probabilities.
+    - There would be a new beta distribution every year. So some males would be 'good' in one year and 'bad' in another. However, the between-year polyandry above would essentially act to transfer male 'dominance' across years.
 
-- **Between-year polyandry**: Probability of retaining the same 'social male' between years (if alive)
