@@ -83,20 +83,87 @@ f <- mean(aggregate(animal~dam+cohort,ped, function(x)length(x))[,3])
 
 #var(aggregate(animal~dam+cohort,ped, function(x)length(x))[,3])
 
+
+######
+## ----- Probability of mating
+######
+
+juv_df <- subset(ped,!(is.na(dam)&is.na(sire)))[,c("animal","cohort")]
+juv_df$age <- 0
+
+# dam_df <- aggregate(animal~dam+cohort,ped,length)[1]
+
+female_cohort<-lapply(split(subset(ped,!is.na(dam))[,c("dam","sire","cohort")], ~dam), function(x){
+	ee1 <- do.call(rbind,lapply(split(x,~cohort), function(y){
+			males<-table(y$sire)
+			data.frame(	dam=unique(y$dam),
+				cohort=unique(y$cohort),
+				social_male=names(which(males==max(males)))[1],
+				## what if its split equally?? at the moment just take first male in list
+				n_males = length(males),
+				prop_paternity = males[which(males==max(males))[1]]/nrow(y),
+				fecundity = nrow(y)
+
+			)
+		}))
+
+})
+
+ee[[100]] %in% juv_df$animal
+
+
+
+## split for each dam, then split for each cohort, from this return fecundity, number of males 
+## mate switch y/n, previous male alive y/n, 
+
+
+######
+## ----- EPP and fidelity
+######
+
+
 ba<-split(ped,~dam+cohort)
-social_male <- sapply(ba, function(x){
+social_male <- lapply(ba, function(x){
+	if(nrow(x)==0){NULL}else{
 	males<-table(x$sire)
-	c(dam=unique(x$dam),cohort=unique(x$cohort),social_male=names(which(males==max(males))))
+	c(dam=unique(x$dam),cohort=unique(x$cohort),social_male=names(which(males==max(males))))	
+	}
+	
 	## what if its split equally??
 	## add in total chicks and proportion from social male
 })
-
-
 
 table(ba[[3]]$sire)
 ba[[20]]
 
 
+
+######
+## ----- male skew
+######
+
+
+cohort_split<-split(ped,~cohort)
+sire_skew<-lapply(cohort_split,function(x){
+	table(x$sire)/length(unique(x$sire))
+})
+### need to include any males that were known to be alive but didn't get any paternity
+
+
+hist(c(sire_skew, recursive=TRUE), breaks=50, freq=FALSE)
+
+beta_param<-EnvStats::ebeta(c(sire_skew, recursive=TRUE))$parameters
+x<-seq(0,1,length.out=1000)
+y<-dbeta(x, shape1=beta_param["shape1"], shape2=beta_param["shape2"])
+lines(y~x)
+
+
+## make a dataframe with all years alive for each individual 
+## then match with some form of sire_skew to get offspring per year 
+
+
+## make a dataframe with all years alive for each individual 
+## then match with some form of sire_skew to get offspring per year 
 
 
 

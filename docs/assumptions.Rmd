@@ -40,9 +40,10 @@ These relate to the Leslie matrix, and generally to parameters associated with f
 
 
 ## Mating system (not implemented)
-I think we can describe the mating system with 3-4 parameters
+I think we can describe the mating system with 3-4 parameters. The way I have thought about this is to assign each female a 'social' male. There are then 
 
 - **Within-year polyandry**: Probability that 'social male' sires offspring, or a random male - essentially probability of EPP within a females offspring
+
 - **Polygyny rate** / male reproductive skew
     - Thinking something like a beta distribution of probabilities that a male sires a brood, then social males are sampled with those probabilities
     - how to extract from pedigree?
@@ -51,4 +52,5 @@ I think we can describe the mating system with 3-4 parameters
     - if same beta value between years, very few individuals will dominate pedigree - induce the appearance of selection when phenotypes are simulated?
     - problem - pedigrees only contain breeding individuals, so we don't detect individuals that never breed. But what we extract from pedigree will be biased in the same way we are simulating pedigrees, so probably doesn't matter.
     - might also conflict with between-year polygyny?
+
 - **Between-year polyandry**: Probability of retaining the same 'social male' between years (if alive)
