@@ -71,11 +71,92 @@ as_total <- rowSums(as_year)
 as <- as_total[1]/as_total[2]
 as_year[1,]/as_year[2,]
 
+
+
 ######
-## ----- Fecundity
+## ----- Probability of mating, Fecundity, EPP and fidelity
 ######
 
-f <- mean(aggregate(animal~dam+cohort,ped, function(x)length(x))[,3])
+
+juv_df <- subset(ped,!(is.na(dam)&is.na(sire)))[,c("animal","cohort")]
+juv_df$age <- 0
+
+
+male_rs <- aggregate(cbind(animal,dam)~sire+cohort,ped,function(x)length(unique(x)))
+names(male_rs)[3:4] <- c("fecundity","n_dams")
+male_cohort <- lapply(split(male_rs, ~sire), function(x){
+	min_year <- if(x$sire[1] %in% juv_df$animal){
+		juv_df[match(x$sire[1],juv_df$animal),"cohort"] + 1 	
+		##assumes that adults breed at age 1
+	}else{
+		min(x$cohort)
+	}
+	years <- min_year:max(x$cohort)
+	missing_years <-years[!years %in% x$cohort]
+	if(length(missing_years)>0){
+		x<- rbind(x,data.frame(sire=unique(x$sire),cohort=missing_years,fecundity = 0, n_dams=0))
+	}
+	x[order(x$cohort),]
+
+})
+
+
+female_cohort<-lapply(split(subset(ped,!is.na(dam))[,c("dam","sire","cohort")], ~dam), function(x){
+	z <- do.call(rbind,lapply(split(x,~cohort), function(y){
+			males<-table(y$sire)
+			data.frame(	dam=unique(y$dam),
+				cohort=unique(y$cohort),
+				social_male=sample(names(which(males==max(males))),1),
+				## what if its split equally?? at the moment just sample random male with equal paternity
+				n_males = length(males),
+				prop_paternity = males[which(males==max(males))[1]]/nrow(y),
+				fecundity = nrow(y)
+
+			)
+		}))
+	min_year <- if(z$dam[1] %in% juv_df$animal){
+		juv_df[match(z$dam[1],juv_df$animal),"cohort"] + 1 	
+		##assumes that adults breed at age 1
+	}else{
+		min(z$cohort)
+	}
+
+	years <- min_year:max(z$cohort)
+	missing_years <-years[!years %in% z$cohort]
+	if(length(missing_years)>0){
+		z<-rbind(z,data.frame(dam=unique(z$dam),cohort=missing_years,social_male=NA,n_males = NA,prop_paternity = NA,fecundity = 0))
+	}
+	z<- z[order(z$cohort),]
+
+	z$last_male_alive <- NA
+	z$last_male_kept <- NA
+
+	if(nrow(z)>1){
+		for(i in 2:nrow(z)){
+			z$last_male_kept[i] <- z$social_male[i-1]==z$social_male[i]
+			z$last_male_alive[i] <- z$cohort[i] %in% male_cohort[[z$social_male[i-1]]]$cohort
+		}}
+	z$divorce <- ifelse(!z$last_male_alive,NA, 
+					ifelse(z$last_male_alive & z$last_male_kept,0,1)
+					)
+	z
+
+})
+
+f_df<-do.call(rbind,female_cohort)
+
+f <- sum(f_df$fecundity)/sum(table(f_df$fecundity)[-1])
+
+p_breed <- table(f_df$fecundity)[1]/sum(table(f_df$fecundity))
+
+p_sire <- mean(f_df$prop_paternity, na.rm=TRUE)
+
+p_retain <- table(f_df$divorce)[1]/sum(table(f_df$divorce))
+
+
+# plot(table(f_df$n_males))
+# hist(f_df$prop_paternity, breaks=50)
+
 
 ######
 ## ----- Immigration
@@ -83,82 +164,51 @@ f <- mean(aggregate(animal~dam+cohort,ped, function(x)length(x))[,3])
 
 1 - ((js*f)/2 + as)
 
-#var(aggregate(animal~dam+cohort,ped, function(x)length(x))[,3])
-
-
-######
-## ----- Probability of mating
-######
-
-juv_df <- subset(ped,!(is.na(dam)&is.na(sire)))[,c("animal","cohort")]
-juv_df$age <- 0
-
-# dam_df <- aggregate(animal~dam+cohort,ped,length)[1]
-
-female_cohort<-lapply(split(subset(ped,!is.na(dam))[,c("dam","sire","cohort")], ~dam), function(x){
-	ee1 <- do.call(rbind,lapply(split(x,~cohort), function(y){
-			males<-table(y$sire)
-			data.frame(	dam=unique(y$dam),
-				cohort=unique(y$cohort),
-				social_male=names(which(males==max(males)))[1],
-				## what if its split equally?? at the moment just take first male in list
-				n_males = length(males),
-				prop_paternity = males[which(males==max(males))[1]]/nrow(y),
-				fecundity = nrow(y)
-
-			)
-		}))
-
-})
-
-
-female_cohort[[500]]
-z <- female_cohort[[500]]
-
-min_year <- if(z$dam[1] %in% juv_df$animal){
-	juv_df[match(z$dam[1],juv_df$animal),"cohort"] + 1 	
-	##assumes that adults breed at age 1
-}else{
-	min(z$cohort)
-}
-
-years <- min_year:max(z$cohort)
-missing_years <-years[!years %in% z$cohort]
-if(length(missing_years)>0){
-	rbind(z,data.frame(dam=unique(z$dam),cohort=missing_years,social_male=NA,n_males = NA,prop_paternity = NA,fecundity = 0))
-}
-
-
-
-
-## split for each dam, then split for each cohort, from this return fecundity, number of males 
-## mate switch y/n, previous male alive y/n, 
-
-
-######
-## ----- EPP and fidelity
-######
-
-
-ba<-split(ped,~dam+cohort)
-social_male <- lapply(ba, function(x){
-	if(nrow(x)==0){NULL}else{
-	males<-table(x$sire)
-	c(dam=unique(x$dam),cohort=unique(x$cohort),social_male=names(which(males==max(males))))	
-	}
-	
-	## what if its split equally??
-	## add in total chicks and proportion from social male
-})
-
-table(ba[[3]]$sire)
-ba[[20]]
-
 
 
 ######
 ## ----- male skew
 ######
+
+
+par(mfrow=c(2,2))
+for(i in c(0.1,1,5,100)){
+	hist(rbinom(1000,100,i/100))	
+}
+# https://stats.stackexchange.com/questions/4659/relationship-between-binomial-and-beta-distributions
+
+# a=k+1
+# b= n-k+3
+# n= popsize
+# k= mean sirings
+
+par(mfcol=c(2,5))
+for(i in c(1,2,5,10,20)){
+	x<-rbinom(10000,100,i/100)
+	plot(table(x))
+	print(sd(x)/mean(x))
+	y<-rbeta(1000,i+1,100-i +3) *(100+1)
+	hist(y)
+	print(sd(y)/mean(y))
+
+}
+
+
+par(mfcol=c(2,5))
+for(i in c(1,2,5,10,20)){
+	x<-rbinom(10000,100,i/100)/(100+1)
+	hist(x,breaks=seq(0,1,0.01))
+	print(sd(x)/mean(x))
+	y<-rbeta(1000,i+1,100-i +3)
+	hist(y,breaks=seq(0,1,0.01))
+	print(sd(y)/mean(y))
+
+}
+
+par(mfrow=c(2,2))
+for(i in c(1,2,5,10,20)){
+}
+
 
 
 cohort_split<-split(ped,~cohort)
