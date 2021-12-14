@@ -111,7 +111,23 @@ female_cohort<-lapply(split(subset(ped,!is.na(dam))[,c("dam","sire","cohort")], 
 
 })
 
-female_cohort[[100]] %in% juv_df$animal
+
+female_cohort[[500]]
+z <- female_cohort[[500]]
+
+min_year <- if(z$dam[1] %in% juv_df$animal){
+	juv_df[match(z$dam[1],juv_df$animal),"cohort"] + 1 	
+	##assumes that adults breed at age 1
+}else{
+	min(z$cohort)
+}
+
+years <- min_year:max(z$cohort)
+missing_years <-years[!years %in% z$cohort]
+if(length(missing_years)>0){
+	rbind(z,data.frame(dam=unique(z$dam),cohort=missing_years,social_male=NA,n_males = NA,prop_paternity = NA,fecundity = 0))
+}
+
 
 
 
