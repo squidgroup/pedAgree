@@ -170,45 +170,36 @@ p_retain <- table(f_df$divorce)[1]/sum(table(f_df$divorce))
 ## ----- male skew
 ######
 
-
-par(mfrow=c(2,2))
-for(i in c(0.1,1,5,100)){
-	hist(rbinom(1000,100,i/100))	
-}
+k
 # https://stats.stackexchange.com/questions/4659/relationship-between-binomial-and-beta-distributions
 
-# a=k+1
-# b= n-k+3
+# a=k
+# b= n-k+1
 # n= popsize
 # k= mean sirings
 
+
+N=100
 par(mfcol=c(2,5))
-for(i in c(1,2,5,10,20)){
-	x<-rbinom(10000,100,i/100)
-	plot(table(x))
+for(k in c(1,2,5,10)){
+	x<-rbinom(10000,N,k/N)/(N)
+	 hist(x,breaks=seq(0,1,0.01))
 	print(sd(x)/mean(x))
-	y<-rbeta(1000,i+1,100-i +3) *(100+1)
-	hist(y)
-	print(sd(y)/mean(y))
-
-}
-
-
-par(mfcol=c(2,5))
-for(i in c(1,2,5,10,20)){
-	x<-rbinom(10000,100,i/100)/(100+1)
-	hist(x,breaks=seq(0,1,0.01))
-	print(sd(x)/mean(x))
-	y<-rbeta(1000,i+1,100-i +3)
+	y<-rbeta(10000,k,N-k +1)
 	hist(y,breaks=seq(0,1,0.01))
 	print(sd(y)/mean(y))
-
 }
 
-par(mfrow=c(2,2))
-for(i in c(1,2,5,10,20)){
+N=100
+par(mfcol=c(2,5))
+for(k in c(1,2,5,10)){
+	x<-rbinom(10000,N,k/N)
+	hist(x)
+	print(sd(x)/mean(x))
+	y<-N*rbeta(10000,k,N-k +1)
+	hist(y)
+	print(sd(y)/mean(y))
 }
-
 
 
 cohort_split<-split(ped,~cohort)
