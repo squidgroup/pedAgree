@@ -93,7 +93,7 @@ options(stringsAsFactors=FALSE)
 				& rbinom(1,1,p_retain)==1 ){
 				  pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)]
 				}else{
-					sample(males,1)
+					sample(males,1, replace=TRUE)
 				}
 			})
 		}
