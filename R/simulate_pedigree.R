@@ -72,7 +72,6 @@ options(stringsAsFactors=FALSE)
 		# get vectors of females and males available to breed, accounting for the probability of females breeding
 		females <- subset(dat[[year]],sex=="F")$animal
 		breeding_females <- females[as.logical(rbinom(length(females),1,p_breed))]
-		males <- subset(dat[[year]],sex=="M")$animal
 
 		#work out number of pairs that can be formed 
 		n_pair <- length(breeding_females)#min(length(breeding_females),length(males))
@@ -80,6 +79,20 @@ options(stringsAsFactors=FALSE)
 		# print(length(breeding_females))
 
 
+		# number of offspring per female
+		# n_juv <- rpois(n_pair,fecundity)
+		n_juv <- rep(fecundity,n_pair)
+
+
+### for each female
+### start with 'social' male from previous year
+### how many eggs does he sire of total, with probability p_polyandry
+### randomly choose a different male, with probability p_polyandry
+### how many of the remaining eggs does he sire
+### continue until all eggs are sired		
+
+		
+		males <- subset(dat[[year]],sex=="M")$animal
 
 		
 		### assign 'social' male
@@ -107,10 +120,6 @@ options(stringsAsFactors=FALSE)
 			female = breeding_females,
 			male = social_male
 			)		
-
-		# number of offspring per female
-		# n_juv <- rpois(n_pair,fecundity)
-		n_juv <- rep(fecundity,n_pair)
 
 		## make ped incorporating EPP and fecundity
 		ped <- data.frame(
