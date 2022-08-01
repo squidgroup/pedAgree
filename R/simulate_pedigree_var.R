@@ -1,4 +1,4 @@
-
+# library(MCMCglmm)
 ## what do we output - how do we incorporate alive individuals that don't breed or multiple measurements
 ## output pedigree and data structure?
 
@@ -14,6 +14,22 @@
 	# immigration = 0
 	# constant_pop = TRUE 
 	# known_age_structure = FALSE
+# mu=rep(0,5)
+# Sigma<-diag(c(1,0,1,0,1))
+# n=100
+mvrnorm2 <- function(n,mu,Sigma){
+	
+	X<-matrix(0, nrow=n, ncol=nrow(Sigma))
+	index <- which(diag(Sigma)!=0)
+	if(any(diag(Sigma)==0)){
+		mu=mu[index]
+		Sigma <- Sigma[index,index]
+	}
+	X2 <- MASS::mvrnorm(n=n, mu=mu, Sigma=Sigma)
+	X[,index] <- X2
+	X
+}
+
 
 simulate_pedigree <- function(
 	years = 5,
@@ -26,11 +42,18 @@ simulate_pedigree <- function(
 	# polgyny_rate = 0,
 	juv_surv = 0.25,
 	adult_surv = 0.5,
+
+	G,
+	PE,
+	E,
+
 	immigration = 0,
 	constant_pop = TRUE ,
 	known_age_structure = FALSE){
 
 options(stringsAsFactors=FALSE)
+
+
 
 	# det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + immigration 
 
@@ -52,6 +75,13 @@ options(stringsAsFactors=FALSE)
 		sex = rep(c("F","M"),each=n_females),
 		cohort=NA
 	)
+
+		### store breeding values in ped - one record per individual
+	MASS::mvrnorm(n=n_females*2, mu=0, Sigma)
+
+	pedigree$js_bv <- rbv()
+pedigree$as_bv
+pedigree$f_bv
 
 	# make list that stores who is alive in each year
 	dat <- list()
@@ -111,6 +141,8 @@ options(stringsAsFactors=FALSE)
 		# number of offspring per female
 		# n_juv <- rpois(n_pair,fecundity)
 		n_juv <- rep(fecundity,n_pair)
+
+
 
 		## make ped incorporating EPP and fecundity
 		ped <- data.frame(
