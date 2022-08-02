@@ -1,4 +1,4 @@
-
+# library(MCMCglmm)
 ## what do we output - how do we incorporate alive individuals that don't breed or multiple measurements
 ## output pedigree and data structure?
 
@@ -14,6 +14,22 @@
 	# immigration = 0
 	# constant_pop = TRUE 
 	# known_age_structure = FALSE
+# mu=rep(0,5)
+# Sigma<-diag(c(1,0,1,0,1))
+# n=100
+mvrnorm2 <- function(n,mu,Sigma){
+	
+	X<-matrix(0, nrow=n, ncol=nrow(Sigma))
+	index <- which(diag(Sigma)!=0)
+	if(any(diag(Sigma)==0)){
+		mu=mu[index]
+		Sigma <- Sigma[index,index]
+	}
+	X2 <- MASS::mvrnorm(n=n, mu=mu, Sigma=Sigma)
+	X[,index] <- X2
+	X
+}
+
 
 simulate_pedigree <- function(
 	years = 5,
@@ -26,11 +42,18 @@ simulate_pedigree <- function(
 	# polgyny_rate = 0,
 	juv_surv = 0.25,
 	adult_surv = 0.5,
+
+	G,
+	PE,
+	E,
+
 	immigration = 0,
 	constant_pop = TRUE ,
 	known_age_structure = FALSE){
 
 options(stringsAsFactors=FALSE)
+
+
 
 	# det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + immigration 
 
@@ -53,6 +76,13 @@ options(stringsAsFactors=FALSE)
 		cohort=NA
 	)
 
+		### store breeding values in ped - one record per individual
+	MASS::mvrnorm(n=n_females*2, mu=0, Sigma)
+
+	pedigree$js_bv <- rbv()
+pedigree$as_bv
+pedigree$f_bv
+
 	# make list that stores who is alive in each year
 	dat <- list()
 	dat[[1]] <-  data.frame(animal = pedigree$animal, sex = pedigree$sex, age=NA)
@@ -72,6 +102,7 @@ options(stringsAsFactors=FALSE)
 		# get vectors of females and males available to breed, accounting for the probability of females breeding
 		females <- subset(dat[[year]],sex=="F")$animal
 		breeding_females <- females[as.logical(rbinom(length(females),1,p_breed))]
+		males <- subset(dat[[year]],sex=="M")$animal
 
 		#work out number of pairs that can be formed 
 		n_pair <- length(breeding_females)#min(length(breeding_females),length(males))
@@ -79,20 +110,6 @@ options(stringsAsFactors=FALSE)
 		# print(length(breeding_females))
 
 
-		# number of offspring per female
-		# n_juv <- rpois(n_pair,fecundity)
-		n_juv <- rep(fecundity,n_pair)
-
-
-### for each female
-### start with 'social' male from previous year
-### how many eggs does he sire of total, with probability p_polyandry
-### randomly choose a different male, with probability p_polyandry
-### how many of the remaining eggs does he sire
-### continue until all eggs are sired		
-
-		
-		males <- subset(dat[[year]],sex=="M")$animal
 
 		
 		### assign 'social' male
@@ -120,6 +137,12 @@ options(stringsAsFactors=FALSE)
 			female = breeding_females,
 			male = social_male
 			)		
+
+		# number of offspring per female
+		# n_juv <- rpois(n_pair,fecundity)
+		n_juv <- rep(fecundity,n_pair)
+
+
 
 		## make ped incorporating EPP and fecundity
 		ped <- data.frame(
