@@ -99,6 +99,135 @@ for(k in c(1,2,5,10)){
 }
 
 
+prop<-
+N=100
+par(mfcol=c(2,6))
+for(k in c(1,2,5,100)){
+	x<-rbinom(10000,N,k/N)/(N)
+	 hist(x,breaks=seq(0,1,0.01))
+	print(sd(x)/mean(x))
+	y<-rbeta(10000,k,N-k +1)
+	hist(y,breaks=seq(0,1,0.01))
+	print(sd(y)/mean(y))
+}
+
+par(mfcol=c(2,4))
+for(k in c(1,2,5,10,20,50,100)){
+	y<-rbeta(10000,k,N-k +1)
+	hist(y,breaks=seq(0,1,0.01))
+	print(sd(y)/mean(y))
+}
+
+par(mfcol=c(2,4))
+prop<-c(1,2,5,10,20,50,100)/N
+for(p in prop){
+	y<-rbeta(10000,p*N,N-p*N +1)
+	hist(y,breaks=seq(0,1,0.01))
+	print(sd(y)/mean(y))
+}
+
+rs<-function(p_polygyny,N){
+	male_p<-rbeta(N,p_polygyny*N,N-p_polygyny*N +1)
+	hist(male_p)
+	male <- 1:N
+	chosen_male<-sample(x=male,prob=male_p,replace=TRUE)
+	unchosen_male <- N - length(unique(chosen_male))
+	c(rep(0,unchosen_male),as.vector(table(chosen_male)))
+
+}
+
+par(mfcol=c(2,5))
+N=100
+plot(table(rs(1,N)))
+plot(table(rs(0.99,N)))
+plot(table(rs(0.5,N)))
+plot(table(rs(0.25,N)))
+plot(table(rs(0.01,N)))
+
+
+rs3<-function(p_polygyny,N){
+	male_p<-rbeta(N,p_polygyny*10,10-p_polygyny*10 )
+	hist(male_p)
+	male <- 1:N
+	chosen_male<-sample(x=male,prob=male_p,replace=TRUE)
+	unchosen_male <- N - length(unique(chosen_male))
+	c(rep(0,unchosen_male),as.vector(table(chosen_male)))
+
+}
+
+{
+	par(mfcol=c(2,5))
+N=10000
+plot(table(rs3(0.9,N)))
+plot(table(rs3(0.75,N)))
+plot(table(rs3(0.5,N)))
+plot(table(rs3(0.25,N)))
+plot(table(rs3(0.01,N)))
+
+}
+
+
+
+
+p_polygyny=1
+
+rs2<-function(p_polygyny,N){
+	male_p<-rbeta(N,p_polygyny,1-p_polygyny)
+	hist(male_p)
+	male <- 1:N
+	chosen_male<-sample(x=male,prob=male_p,replace=TRUE)
+	unchosen_male <- N - length(unique(chosen_male))
+	c(rep(0,unchosen_male),as.vector(table(chosen_male)))
+}
+
+par(mfcol=c(2,5))
+N=1000
+x<-sample(N, replace=TRUE)
+
+plot(table(table(x)))
+hist(rs2(1,N))
+
+plot(table(rs2(1,N)))
+plot(table(rs2(0.99,N)))
+plot(table(rs2(0.5,N)))
+plot(table(rs2(0.25,N)))
+plot(table(rs2(0.01,N)))
+
+par(mfcol=c(2,4))
+plot(table(table(sample(10000, replace=TRUE))))
+plot(table(rs2(1,1000)))
+plot(table(rs2(1,10000)))
+plot(table(rs2(1,100000)))
+
+table(table(sample(1:N, replace=TRUE)))
+table(rs(0.5/100,100))/100
+table(rs(0.5/1000,1000))/1000
+table(rs(0.5/N,N))/N
+
+table(rs(0.2/N,N))/N
+table(rs(0.1,N))
+table(rs(0.01,N))
+table(rs(0.001,N))
+table(rs(0.0001,N))
+table(rs(0.00001,N))
+
+
+
+n = 1000
+N = 1000
+p = rep(1000,N)
+q = rmultinom(1, prob=p, size=n)
+mean(q)
+sum(q)
+plot(table(q))
+
+
+
+
+
+
+
+
 cohort_split<-split(ped,~cohort)
 sire_skew<-lapply(cohort_split,function(x){
 	table(x$sire)/length(unique(x$sire))

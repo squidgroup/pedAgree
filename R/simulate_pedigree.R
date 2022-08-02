@@ -145,8 +145,8 @@ options(stringsAsFactors=FALSE)
 				### need to ensure equal sex ratio of recruits, otherwise population size fluctuations
 				ped[sample(which(ped[,"sex"]=="F"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
 				ped[sample(which(ped[,"sex"]=="M"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
-				cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F"),
-				cbind(animal=sample(males, adult_surv*n_females, replace=FALSE), sex="M")
+				if(adult_surv!=0) cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F"),
+				if(adult_surv!=0) cbind(animal=sample(males, adult_surv*n_females, replace=FALSE), sex="M")
 			)
 		}else{
 			rbind(
