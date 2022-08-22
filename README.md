@@ -1,6 +1,5 @@
-# pedigree_simulations
-Repository for code relating to the animal model working groups project on pedigree simulations
-
+# squidPed
+(soon-to-be) R package for pedigree simulations
 
 ## Data
 Contains all data, in two folders
