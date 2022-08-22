@@ -30,7 +30,7 @@ simulate_pedigree <- function(
 	constant_pop = TRUE ,
 	known_age_structure = FALSE){
 
-options(stringsAsFactors=FALSE)
+  options(stringsAsFactors=FALSE) # as long as later version of R - dont need
 
 	# det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + immigration 
 
@@ -55,7 +55,7 @@ options(stringsAsFactors=FALSE)
 
 	# make list that stores who is alive in each year
 	dat <- list()
-	dat[[1]] <-  data.frame(animal = pedigree$animal, sex = pedigree$sex, age=NA)
+	dat[[1]] <-  data.frame(animal = pedigree$animal, sex = pedigree$sex, age=NA, year=1)
 	## think about using rgeom here = should it be different for year 1
 	## do we start with age unknown as that would be realistic to the sampling?
 	# plot(table(rgeom(1000,0.5)+1))
@@ -96,9 +96,9 @@ options(stringsAsFactors=FALSE)
 
 		
 		### assign 'social' male
-		if(year==1){
+		if(year==1 || adult_surv==0){ # or adult_surv=0?
 			## should this be with replacement?
-			social_male<-sample(males,n_pair, replace=TRUE)	
+			social_male<-sample(males,n_pair, replace=FALSE)	#TURE?
 		}else{
 			social_male<-sapply(breeding_females,function(bf){
 				if(bf %in% pairs[[year-1]]$female 
@@ -158,6 +158,7 @@ options(stringsAsFactors=FALSE)
 			)
 		}
 	  next_year_ind$age<-(year+1) - pedigree[match(next_year_ind$animal,pedigree$animal),"cohort"]
+	  next_year_ind$year <- year+1
 	  dat[[year+1]] <- next_year_ind
 	}
 

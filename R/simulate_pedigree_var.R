@@ -14,20 +14,34 @@
 	# immigration = 0
 	# constant_pop = TRUE 
 	# known_age_structure = FALSE
-# mu=rep(0,5)
-# Sigma<-diag(c(1,0,1,0,1))
-# n=100
-mvrnorm2 <- function(n,mu,Sigma){
+
+exp2lat<- function(mean,cov){
+	mean <- as.matrix(mean)
+	cov <- as.matrix(cov)
 	
-	X<-matrix(0, nrow=n, ncol=nrow(Sigma))
-	index <- which(diag(Sigma)!=0)
-	if(any(diag(Sigma)==0)){
-		mu=mu[index]
-		Sigma <- Sigma[index,index]
+	mean_out <- rep(NA,2)
+	for(i in 1:nrow(cov)) mean_out[i] <- log(mean[i]^2/sqrt(mean[i]^2+cov[i,i]))
+	
+	cov_out <- matrix(NA,nrow(cov),ncol(cov))
+	for(i in 1:nrow(cov)){
+		for(j in 1:ncol(cov)) cov_out[i,j] <- log(1 + cov[i,j]/(mean[i]*mean[j]))
 	}
-	X2 <- MASS::mvrnorm(n=n, mu=mu, Sigma=Sigma)
-	X[,index] <- X2
-	X
+	return(list(mean=mean_out,cov=cov_out))
+}
+
+## function to get means and covariance matrix from latent (normal) to expected (lognormal) scale
+lat2exp<- function(mean,cov){
+	mean <- as.matrix(mean)
+	cov <- as.matrix(cov)
+	
+	mean_out <- rep(NA,2)
+	for(i in 1:nrow(cov)) mean_out[i] <- exp(mean[i]+ cov[i,i]/2)
+
+	cov_out <- matrix(NA,nrow(cov),ncol(cov))
+	for(i in 1:nrow(cov)){
+		for(j in 1:ncol(cov)) cov_out[i,j] <- exp(mean[i]+mean[j] + (cov[i,i]+cov[j,j])/2)*(exp(cov[i,j])-1)
+	}
+	return(list(mean=mean_out,cov=cov_out))
 }
 
 
@@ -43,16 +57,20 @@ simulate_pedigree <- function(
 	juv_surv = 0.25,
 	adult_surv = 0.5,
 
-	G,
-	PE,
-	E,
-
+	det = NULL,#list(components=c("p_breed","fecundity"), G, PE, MG, ME, E),
+	
 	immigration = 0,
 	constant_pop = TRUE ,
 	known_age_structure = FALSE){
 
 options(stringsAsFactors=FALSE)
 
+	if(missing(det)) det <- list(components=c("p_breed","fecundity","p_sire","p_retain","juv_surv","adult_surv"), G, PE, MG, ME, E)
+
+	fecundity_l <- log(fecundity) - (G["fecundity","fecundity"]+PE["fecundity","fecundity"]+E["fecundity","fecundity"])/2
+
+## if using threshold, presumably can use pnorm/qnorm to get between observed and latent scale?
+  juv_surv_l <- qnorm(juv_surv,0,G["juv_surv","juv_surv"]+PE["juv_surv","juv_surv"]+E["juv_surv","juv_surv"])
 
 
 	# det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + immigration 
@@ -77,11 +95,13 @@ options(stringsAsFactors=FALSE)
 	)
 
 		### store breeding values in ped - one record per individual
-	MASS::mvrnorm(n=n_females*2, mu=0, Sigma)
+	bv <- MASS::mvrnorm(n=n_females*2, mu=0, G)
+	pe <- MASS::mvrnorm(n=n_females*2, mu=0, PE)
 
-	pedigree$js_bv <- rbv()
-pedigree$as_bv
-pedigree$f_bv
+	pedigree$f_bv <- bv[,1]
+	pedigree$js_bv <- bv[,2]
+	pedigree$as_bv <- bv[,3]
+
 
 	# make list that stores who is alive in each year
 	dat <- list()
@@ -90,6 +110,9 @@ pedigree$f_bv
 	## do we start with age unknown as that would be realistic to the sampling?
 	# plot(table(rgeom(1000,0.5)+1))
 	# dgeom(0:10,0.5)
+
+# 	e <- MASS::mvrnorm(n=nrow(dat[[1]]), mu=0, E)
+
 
 	pairs <- list()
 
@@ -142,7 +165,14 @@ pedigree$f_bv
 		# n_juv <- rpois(n_pair,fecundity)
 		n_juv <- rep(fecundity,n_pair)
 
+		# exp(rnorm(n_pair,fecundity_l, )
+	f_index <- match(breeding_females,pedigree$animal)
+	f_m_index <- match(breeding_females,pedigree$dam)
+	f_e <- rnorm(n_pair, 0, E[1,1])
 
+f_exp <- exp(fecundity_l + 
+	rowSums(cbind(pedigree[f_index,c("f_bv","f_pe"],pedigree[f_index,c("f_mg","f_me"]))
++ f_e)
 
 		## make ped incorporating EPP and fecundity
 		ped <- data.frame(
@@ -182,6 +212,7 @@ pedigree$f_bv
 		}
 	  next_year_ind$age<-(year+1) - pedigree[match(next_year_ind$animal,pedigree$animal),"cohort"]
 	  dat[[year+1]] <- next_year_ind
+	  ### save fecundity, survival etc into dat, so makes analysis easier
 	}
 
 	return(list(pedigree=pedigree,data_str=do.call(rbind,dat)))
