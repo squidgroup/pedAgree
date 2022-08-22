@@ -15,6 +15,10 @@
 	# constant_pop = TRUE 
 	# known_age_structure = FALSE
 
+##  todo
+# sex specific rates
+# juvenile survival
+
 simulate_pedigree <- function(
 	years = 5,
 	n_females = 50,
