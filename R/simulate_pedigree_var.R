@@ -39,7 +39,9 @@ simulate_pedigree <- function(
 	
 	immigration = 0,
 	constant_pop = TRUE ,
-	known_age_structure = FALSE){
+	known_age_structure = FALSE,
+	verbose=FALSE 
+){
 
 	options(stringsAsFactors=FALSE)
 
@@ -66,16 +68,19 @@ simulate_pedigree <- function(
   ## should cohort effects for previous years be simulated?
 
 ### GROWTH RATE
-	# det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + immigration 
+	det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + immigration 
 
-	# v_as <- adult_surv * (1-adult_surv)
-	# v_js <- juv_surv * (1-juv_surv)
-	# v_fec <- fecundity
-	# v_rec <- fecundity^2*v_js + juv_surv^2*v_fec + v_js*v_fec
+	v_as <- adult_surv * (1-adult_surv)
+	v_js <- juv_surv * (1-juv_surv)
+	v_fec <- fecundity
+	v_rec <- fecundity^2*v_js + juv_surv^2*v_fec + v_js*v_fec
 
-	# stoch_growth_rate <- det_growth_rate - (v_as + v_rec)/(2*n_females)
+	stoch_growth_rate <- det_growth_rate - (v_as + v_rec)/(2*n_females)
 
 	# immigration <- 1- stoch_growth_rate
+
+	cat("deterministic growth rate =", det_growth_rate,"\n")
+	cat("stochastic growth rate =", stoch_growth_rate,"\n")
 
 
 ### BASE POPULATION
@@ -111,7 +116,7 @@ simulate_pedigree <- function(
 
 # 	e <- MASS::mvrnorm(n=nrow(dat[[1]]), mu=0, E)
 
-	cat("initial sims done \n")
+	if(verbose) cat("initial sims done \n")
 
 	pairs <- list()
 
@@ -134,8 +139,11 @@ simulate_pedigree <- function(
 		### assign 'social' male
 		if(year==1 || adult_surv==0){ # or adult_surv=0?
 			## should this be with replacement?
-			social_male<-sample(males,n_pair, replace=FALSE)	#TURE?
+			social_male<-sample(males,n_pair, replace=TRUE)	#TURE?
 		}else{
+			# if female existed last year, who was male. else sample new male
+			# if male alive, then rbinom(1,1,p_retain), 
+			# if retain then male, else sample new male
 			social_male<-sapply(breeding_females,function(bf){
 				if(bf %in% pairs[[year-1]]$female 
 				& pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)] %in% males
@@ -147,11 +155,6 @@ simulate_pedigree <- function(
 			})
 		}
 		
-		
-# if female existed last year, who was male. else sample new male
-		# if male alive, then rbinom(1,1,p_retain), 
-		  # if retain then male, 
-		  # else sample new male
 		pairs[[year]] <- data.frame(
 			female = breeding_females,
 			male = social_male
@@ -159,8 +162,6 @@ simulate_pedigree <- function(
 
 ##### FECUNDITY
 
-		#females row number in pedigree
-		# f_index <- match(breeding_females,pedigree$animal) 
 		#breeding female mother IDs
 		bf_dams <- pedigree$dam[match(breeding_females,pedigree$animal)]
 		#breeding female cohorts
@@ -173,7 +174,7 @@ simulate_pedigree <- function(
 		}else{
 			f_e <- rnorm(n_pair, 0, E["fecundity","fecundity"])	
 		}		
-		## save E in dat
+		## save E in dat?
 
 		f_exp <- exp(fecundity_l + 
 			rowSums(cbind(
@@ -195,7 +196,7 @@ simulate_pedigree <- function(
 			rpois(n_pair,f_exp)
 		}
 
-	cat("year",year,"fecundity \n")
+	if(verbose) cat("year",year,"fecundity \n")
 
 ### Generate offspring, pedigree and genetic and permanent environmental values
 
@@ -229,7 +230,7 @@ simulate_pedigree <- function(
 		mg <- rbind(mg,mg_add)
 		me <- rbind(me,me_add)
 
-	cat("year",year,"ped \n")
+	if(verbose) cat("year",year,"ped \n")
 
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,3]))
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,2]))
@@ -284,7 +285,7 @@ simulate_pedigree <- function(
  	  next_year_ind$year <- year+1
 	  dat[[year+1]] <- next_year_ind
 	  ### save fecundity, survival etc into dat, so makes analysis easier
-	cat("year",year,"next year \n")
+	if(verbose) cat("year",year,"next year \n")
 	}
 	
 

@@ -73,16 +73,24 @@ fecundity_l <- log(fecundity) - (0.2)/2
 hist(exp(rnorm(100,fecundity_l,0.2 )))
 
 hist()
+rm(list=ls())
+
+source("/Users/joelpick/github/pedigree_simulations/R/functions.R")
+source("/Users/joelpick/github/pedigree_simulations/R/simulate_pedigree_var.R")
+
 pop<-simulate_pedigree(
 	years = 50,
 	n_females = 100,
 	fecundity = 4,
-	juv_surv = 0.25,
+	juv_surv = 0.5,
 	adult_surv = 0,
-	det = list(rates=c("fecundity"), G=0.1),
-	constant_pop=FALSE
+	det = list(rates=c("fecundity"), G=0.01),
+	constant_pop=FALSE,
+	verbose=FALSE
 	)
 
 fec<-aggregate(animal~cohort,aggregate(animal~cohort+dam,pop$ped,length),mean)
+pop_size <- aggregate(animal~cohort,pop$ped,length)
 
 plot(animal~cohort,fec, ylab="mean annual fecundity", xlab="year")
+plot(animal~cohort,pop_size, ylab="population size", xlab="year")
