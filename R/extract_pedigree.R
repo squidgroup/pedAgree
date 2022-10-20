@@ -4,7 +4,7 @@ extract_pedigree <- function(ped){
 	## ----- Juvenile survival
 	######
 
-	## in order not to downward bias survival too much, maybe first work out modal age at first repro, and then exclude that many years off the end?
+	## in order not to downward bias survival too much, maybe first work out modal age at first repro, and then exclude that many years off the end? Or correct of it?  
 
 	chicks_to_recruit <- subset(ped,!(is.na(dam)&is.na(sire)) & cohort!=max(cohort, na.rm=TRUE))[,1]
 	all_adults <- unique(c(ped[,"dam"],ped[,"sire"]))
