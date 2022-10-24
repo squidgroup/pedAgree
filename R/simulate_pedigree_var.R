@@ -176,6 +176,8 @@ simulate_pedigree <- function(
 		}		
 		## save E in dat?
 
+		## multivariate E? residual covariance in survival and fecundity?
+
 		f_exp <- exp(fecundity_l + 
 			rowSums(cbind(
 				bv[breeding_females, "fecundity"],
@@ -252,17 +254,23 @@ simulate_pedigree <- function(
 				, me[ped$dam, "juv_surv"]
 				, year_effect[year, "juv_surv"]
 				# , cohort_effect[year, "juv_surv"]
+				## there could be cohort covariance - juvenile survival and adult traits - bad conditions affect later life traits
+				## there could be year covariance - years where 
 			))
 			# + js_e
+			## don't think can have residual covariance - doesn't link to anything 
 		)
 
+	## check the conversion works 
 
 
 		next_year_ind <- if(constant_pop){
 			rbind(
 				### need to ensure equal sex ratio of recruits, otherwise population size fluctuations
-				ped[sample(which(ped[,"sex"]=="F"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
-				ped[sample(which(ped[,"sex"]=="M"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
+				# ped[sample(which(ped[,"sex"]=="F"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
+				# ped[sample(which(ped[,"sex"]=="M"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
+				ped[sample(which(ped[,"sex"]=="F"), js_exp*fecundity*n_females/2, replace=FALSE),c(1,4)],
+				ped[sample(which(ped[,"sex"]=="M"), js_exp*fecundity*n_females/2, replace=FALSE),c(1,4)],
 				if(adult_surv>0){	
 					cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F")},
 				if(adult_surv>0){	
