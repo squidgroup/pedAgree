@@ -1,3 +1,23 @@
+#' @title simulated_variance
+#' @description Calculate simulated mean and variance in response variable(s)
+#' @param years number of time steps
+#' @param n_females starting number of females
+#' @param p_breed probability that a female breeds
+#' @param fecundity number of juveniles a female produces each year
+#' @param juv_surv survival of juveniles until local recruitment
+#' @param adult_surv survival of adults across years
+#' @param immigration yearly immigration, as a proportion of starting number of females (n_females)
+#' @param p_sire probability that 'social' male sires all offspring 
+#' @param p_retain probability that social partnership is retained
+#' @details 
+#' 
+#' @author Joel Pick - joel.l.pick@gmail.com
+#' @return A list with means and variance at each level
+#' @examples
+#' \dontrun{
+#' }
+#' @export
+
 
 ## what do we output - how do we incorporate alive individuals that don't breed or multiple measurements
 ## output pedigree and data structure?
@@ -22,15 +42,14 @@
 simulate_pedigree <- function(
 	years = 5,
 	n_females = 50,
-	
-	p_breed = 1, #probability that a female breeds
-	fecundity = 4, #number of zygotes a female produces each year
-	p_sire = 1, # probability that 'social' male sires all offspring 
-	p_retain = 0, #probability that social partnership is retained
-	# polgyny_rate = 0,
+	p_breed = 1,
+	fecundity = 4,
 	juv_surv = 0.25,
 	adult_surv = 0.5,
 	immigration = 0,
+	p_sire = 1, 
+	p_retain = 0, #
+	# polgyny_rate = 0,
 	constant_pop = TRUE ,
 	known_age_structure = FALSE){
 
@@ -144,6 +163,9 @@ simulate_pedigree <- function(
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,2]))
 
 		## create individuals present in the next year
+
+		immigrants <- rbinom(n_females)
+
 		next_year_ind <- if(constant_pop){
 			rbind(
 				### need to ensure equal sex ratio of recruits, otherwise population size fluctuations

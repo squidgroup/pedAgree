@@ -1,4 +1,54 @@
 
+	######
+	## ----- Function to extract 'age at first reproduction' from a pedigree
+	######
+
+AFR <- function(ped,sex_specific=TRUE){
+  dams <- as.character(na.omit(unique(ped[,"dam"])))
+	sires <- as.character(na.omit(unique(ped[,"sire"])))
+
+	## AFR for females
+	  ## for each dam, work out her cohort and her first year of repro - difference between them in AFR
+  # i=dams[900]
+  AFR_d <- t(sapply(dams,function(i){
+	  cohort <- ped[ped[,1]==i, "cohort"]
+	  parent_cohort <- na.omit(subset(ped, dam==i)$cohort)
+		if(length(parent_cohort)>0){
+	  	YFR <- min(parent_cohort)
+	  	YFR-cohort	
+	  }else{
+	  	NA
+	  }	
+  }))
+	
+	## AFR for males
+	AFR_s <- sapply(sires,function(i){
+	  cohort <- ped[ped[,1]==i, "cohort"]
+	  parent_cohort <- na.omit(subset(ped, sire==i)$cohort)
+	  if(length(parent_cohort)>0){
+	  	YFR <- min(parent_cohort)
+	  	YFR-cohort	
+	  }else{
+	  	NA
+	  }	  
+	})
+
+	## return modal AFR
+	if(sex_specific){
+		counts_d <- table(AFR_d)
+  	counts_s <- table(AFR_s)
+
+  	c(
+  		f=as.numeric(names(counts_d[which(counts_d==max(counts_d))])),
+  		m=as.numeric(names(counts_s[which(counts_s==max(counts_s))]))
+  	)
+	}else{
+		counts <- table(c(AFR_d,AFR_s))
+  	as.numeric(names(counts[which(counts==max(counts))]))
+	}
+}
+
+
 
 	######
 	## ----- Function to extract 'juvenile survival' from a pedigree
@@ -30,40 +80,6 @@ juvenile_survival <- function(ped,sex_specific=TRUE){
 
 
 
-AFR <- function(ped,sex_specific=TRUE){
-  dams <- as.character(na.omit(unique(ped[,"dam"])))
-	sires <- as.character(na.omit(unique(ped[,"sire"])))
-
-	## AFR for females
-	  ## for each dam, work out her cohort and her first year of repro - difference between them in AFR
-  i=dams[1]
-  AFR_d <- sapply(dams,function(i){
-	  cohort <- ped[ped[,1]==i, "cohort"]
-	  YFR <- min(subset(ped, dam==i)$cohort, na.rm=TRUE)
-	  YFR-cohort
-	})
-	
-	## AFR for males
-	AFR_s <- sapply(sires,function(i){
-	  cohort <- ped[ped[,1]==i, "cohort"]
-	  YFR <- min(subset(ped, sire==i)$cohort, na.rm=TRUE)
-	  YFR-cohort
-	})
-
-	## return modal AFR
-	if(sex_specific){
-		counts_d <- table(AFR_d)
-  	counts_s <- table(AFR_s)
-
-  	c(
-  		f=as.numeric(names(counts_d[which(counts_d==max(counts_d))])),
-  		m=as.numeric(names(counts_s[which(counts_s==max(counts_s))]))
-  	)
-	}else{
-		counts <- table(c(AFR_d,AFR_s))
-  	as.numeric(names(counts[which(counts==max(counts))]))
-	}
-}
 
 
 ## essentially these give paramters of a zero inflated process 
