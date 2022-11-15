@@ -138,10 +138,28 @@ simulate_pedigree <- function(
 			#equal sex ratio
 			sex=sample(c("M","F"),sum(n_juv),replace=TRUE),
 			cohort=year)
-		pedigree <- rbind(pedigree,ped)
 
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,3]))
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,2]))
+
+		## immigrants
+		## need to sort out with constant pop
+	
+		imm_females <- paste(year+1,"IF",seq_len(rbinom(1,n_females,immigration)),sep="_")
+		
+		imm_males <- paste(year+1,"IM",seq_len(rbinom(1,n_females,immigration),sep="_")
+
+		imm <- data.frame(
+			animal=c(imm_females,imm_males),
+			dam=NA,
+			sire=NA,
+			sex=rep(c("F","M"),c(length(imm_females),length(imm_males))),
+			cohort=NA
+			)
+
+		pedigree <- rbind(pedigree,ped,imm)
+
+
 
 		## create individuals present in the next year
 		next_year_ind <- if(constant_pop){
@@ -152,7 +170,8 @@ simulate_pedigree <- function(
 				if(adult_surv>0){	
 					cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F")},
 				if(adult_surv>0){	
-					cbind(animal=sample(males, adult_surv*n_females, replace=FALSE), sex="M")}
+					cbind(animal=sample(males, adult_surv*n_females, replace=FALSE), sex="M")},
+				imm[,c(1,4)]
 			)
 		}else{
 			rbind(
