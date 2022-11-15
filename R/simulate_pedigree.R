@@ -1,10 +1,43 @@
+
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
+
+between <- function(x,min,max) x>=min && x<=max
+
+general_check <- function(name,env, rate=TRUE, sex_specific=TRUE){
+	x <- get(name,pos=env)
+
+	if(!is.vector(x)) stop(paste(name,"is not a vector"))
+	
+	if(rate){
+		if(!between(x,0,1)) stop(paste(name,"must be between 0 and 1"))	
+	}else{
+		if(!is.wholenumber(x) & x>0) stop(paste(name,"must be a whole number and >0"))	
+	}
+	
+	
+	if(sex_specific){
+		if(!length(x) %in% 1:2) stop(paste(name,"should be length 1 or 2"))
+	
+		assign(paste0(name,"_f"),x[1],pos=env)
+		if(length(x)==2){	
+			assign(paste0(name,"_m"),x[2],pos=env)
+		}else{
+			assign(paste0(name,"_m"),x[1],pos=env)
+		}
+	}else{
+		if(!length(x) == 1) stop(paste(name,"should be length 1"))
+	}
+}
+
+
 #' @title simulated_variance
 #' @description Calculate simulated mean and variance in response variable(s)
 #' @param years number of time steps
-#' @param n_females starting number of females
+#' @param n_females starting number of breeding females
+#' @param afr age at first reproduction
 #' @param p_breed probability that a female breeds
 #' @param fecundity number of juveniles a female produces each year
-#' @param juv_surv survival of juveniles until local recruitment
+#' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring
 #' @param adult_surv survival of adults across years
 #' @param immigration yearly immigration, as a proportion of starting number of females (n_females)
 #' @param p_sire probability that 'social' male sires all offspring 
@@ -24,14 +57,18 @@
 
 	# years = 5
 	# n_females = 10
+
 	# p_breed = 1
+	# juv_surv = 0.25
+	# adult_surv = 0.5
+	# immigration = 0
+	# afr=1
+
 	# fecundity = 4
 	# p_sire = 1
 	# p_retain = 0.8
 	# polgyny_rate = 0
-	# juv_surv = 0.5
-	# adult_surv = 0
-	# immigration = 0
+
 	# constant_pop = TRUE 
 	# known_age_structure = FALSE
 
@@ -42,6 +79,7 @@
 simulate_pedigree <- function(
 	years = 5,
 	n_females = 50,
+	afr=1,
 	p_breed = 1,
 	fecundity = 4,
 	juv_surv = 0.25,
@@ -55,14 +93,35 @@ simulate_pedigree <- function(
 
   options(stringsAsFactors=FALSE) # as long as later version of R - dont need
 
-	# det_growth_rate <- (juv_surv * fecundity)/2 + adult_surv + immigration 
+
+	## get environment, for transform det function
+	Renv <- environment()
+	
+	# check and generate all sex specific variables
+
+	general_check("afr", env=Renv, rate=FALSE, sex_specific=TRUE)
+
+	lapply(c("p_breed", "adult_surv","juv_surv","immigration"),general_check, env=Renv, rate=TRUE, sex_specific=TRUE)
+
+	lapply(c("years", "n_females", "fecundity"), general_check, env=Renv, rate=FALSE, sex_specific=FALSE)
+
+	lapply(c("p_retain", "p_sire"), general_check, env=Renv, rate=TRUE, sex_specific=FALSE)
+
+	det_growth_rate_f <- (p_breed_f * juv_surv_f * fecundity)/2 + adult_surv_f + immigration_f
+
+	# male growth rate probably doesn't matter as long as all eggs are fertilised? although at some point would run out of males
+	# det_growth_rate_m <- (juv_surv_m * fecundity)/2 + adult_surv_m + immigration_m
+
+	if(det_growth_rate_f>1) warning("growth rate is more than 1") 
+  if(det_growth_rate_f<1) warning("growth rate is less than 1") 
 
 	# v_as <- adult_surv * (1-adult_surv)
+	# v_imm <- immigration * (1-immigration)
 	# v_js <- juv_surv * (1-juv_surv)
 	# v_fec <- fecundity
 	# v_rec <- fecundity^2*v_js + juv_surv^2*v_fec + v_js*v_fec
 
-	# stoch_growth_rate <- det_growth_rate - (v_as + v_rec)/(2*n_females)
+	# stoch_growth_rate <- det_growth_rate - (v_as + v_rec + v_imm)/(2*n_females)
 
 	# immigration <- 1- stoch_growth_rate
 
@@ -73,17 +132,25 @@ simulate_pedigree <- function(
 		dam = NA,
 		sire = NA,
 		sex = rep(c("F","M"),each=n_females),
-		cohort=NA
+		## starting age structure for female and males, based on constant survival rate
+		## we could delete age/cohort of these individuals in the output as that would be realistic to a real pedigree?
+		cohort= -1 * c(if(adult_surv_f==0){rep(0,n_females)}else{rgeom(n_females,adult_surv_f)},if(adult_surv_m==0){rep(0,n_females)}else{rgeom(n_females,adult_surv_m)})
 	)
 
-	# make list that stores who is alive in each year
-	dat <- list()
-	dat[[1]] <-  data.frame(animal = pedigree$animal, sex = pedigree$sex, age=NA, year=1)
-	## think about using rgeom here = should it be different for year 1
-	## do we start with age unknown as that would be realistic to the sampling?
-	# plot(table(rgeom(1000,0.5)+1))
-	# dgeom(0:10,0.5)
+# rgeom(n_females,adult_surv_f),rgeom(n_females,adult_surv_m))
 
+
+	# make list that stores who is available to breed(or alive??) in each year
+	dat <- list()
+	# dat[[1]] <-  data.frame(animal = pedigree$animal, sex = pedigree$sex, age=NA, year=1)
+	dat[[1]] <-  data.frame(
+		animal = pedigree$animal, 
+		sex = pedigree$sex, 
+		age= 1-pedigree$cohort, 
+		year= 1
+		)
+
+	## stores male-female pairings across years
 	pairs <- list()
 
 	# year=1
@@ -93,8 +160,13 @@ simulate_pedigree <- function(
 		# probability of breeding just on females? assume that male breeding is dependent on females?
 
 		# get vectors of females and males available to breed, accounting for the probability of females breeding
-		females <- subset(dat[[year]],sex=="F")$animal
-		breeding_females <- females[as.logical(rbinom(length(females),1,p_breed))]
+#		females <- subset(dat[[year]],sex=="F")$animal
+		females <- subset(dat[[year]],sex=="F" & age>=afr_f)$animal
+		## maybe just dont include these individuals in dat?
+
+		breeding_females <- females[as.logical(rbinom(length(females),1,p_breed_f))]
+
+		# dat[[year]][(match(females,dat[[year]]$animal)),"age"]
 
 		#work out number of pairs that can be formed 
 		n_pair <- length(breeding_females)#min(length(breeding_females),length(males))
@@ -106,6 +178,9 @@ simulate_pedigree <- function(
 		# n_juv <- rpois(n_pair,fecundity)
 		n_juv <- rep(fecundity,n_pair)
 
+		
+		males <- subset(dat[[year]],sex=="M"& age>=afr_m)$animal
+		breeding_males <- males[as.logical(rbinom(length(males),1,p_breed_m))]
 
 ### for each female
 ### start with 'social' male from previous year
@@ -115,13 +190,10 @@ simulate_pedigree <- function(
 ### continue until all eggs are sired		
 
 		
-		males <- subset(dat[[year]],sex=="M")$animal
-
-		
 		### assign 'social' male
 		if(year==1 || adult_surv==0){ # or adult_surv=0?
 			## should this be with replacement?
-			social_male<-sample(males,n_pair, replace=FALSE)	#TURE?
+			social_male<-sample(breeding_males, n_pair, replace=FALSE)	#TURE?
 		}else{
 			social_male<-sapply(breeding_females,function(bf){
 				if(bf %in% pairs[[year-1]]$female 
@@ -133,6 +205,7 @@ simulate_pedigree <- function(
 				}
 			})
 		}
+		## what do do with probability of breeding and mate retention?!
 		
 		
 # if female existed last year, who was male. else sample new male
@@ -157,51 +230,90 @@ simulate_pedigree <- function(
 			#equal sex ratio
 			sex=sample(c("M","F"),sum(n_juv),replace=TRUE),
 			cohort=year)
+## could do something like n_sired until no offspring left, and then sample males to fill the male IDs
+
 
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,3]))
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,2]))
 
 		## immigrants
 		## need to sort out with constant pop
-	
-		imm_females <- paste(year+1,"IF",seq_len(rbinom(1,n_females,immigration)),sep="_")
+		## might be worth giving the immigrants age=afr, so cohort=year-afr
+
+		n_imm <- if(constant_pop){
+			c(immigration_f,immigration_m)*n_females
+		}else{
+			rbinom(2,n_females,c(immigration_f,immigration_m))
+		}
 		
-		imm_males <- paste(year+1,"IM",seq_len(rbinom(1,n_females,immigration),sep="_")
+		imm_females <- if(n_imm[1]>0){
+			data.frame(
+				animal=paste(year+1,"IF",seq_len(n_imm[1]),sep="_"),
+				dam=NA,
+				sire=NA,
+				sex="F",#rep(c("F","M"),c(n_imm)),
+				cohort=year-afr +1
+				)
+			# paste(year+1,"IF",seq_len(n_imm[1]),sep="_")	
+		}else{NULL}
+		
+		imm_males <- if(n_imm[2]>0){
+			data.frame(
+				animal=paste(year+1,"IM",seq_len(n_imm[2]),sep="_"),
+				dam=NA,
+				sire=NA,
+				sex="M",#rep(c("F","M"),c(n_imm)),
+				cohort=year-afr +1
+				)
+			# paste(year+1,"IM",seq_len(n_imm[2]),sep="_")
+		}else{NULL}
 
-		imm <- data.frame(
-			animal=c(imm_females,imm_males),
-			dam=NA,
-			sire=NA,
-			sex=rep(c("F","M"),c(length(imm_females),length(imm_males))),
-			cohort=NA
-			)
 
-		pedigree <- rbind(pedigree,ped,imm)
+		immigrants <- if(year!=years){
+			rbind(imm_females,imm_males)
+			# data.frame(
+			# 	animal=c(imm_females,imm_males),
+			# 	dam=NA,
+			# 	sire=NA,
+			# 	sex=rep(c("F","M"),c(n_imm)),
+			# 	cohort=year-afr +1
+			# 	)
+		}else{
+			NULL
+		}
+
 
 
 
 		## create individuals present in the next year
 
-		immigrants <- rbinom(n_females)
+
+## or could take the new recruits from the whole pedigree, subset by cohort = year-afr - maybe this is better, because otherwise dat always has a load of pre afr individuals in it
 
 		next_year_ind <- if(constant_pop){
 			rbind(
 				### need to ensure equal sex ratio of recruits, otherwise population size fluctuations
-				ped[sample(which(ped[,"sex"]=="F"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
-				ped[sample(which(ped[,"sex"]=="M"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
+				ped[sample(which(ped[,"sex"]=="F"), juv_surv_f*fecundity*n_females/2, replace=FALSE),c(1,4)],
+				ped[sample(which(ped[,"sex"]=="M"), juv_surv_m*fecundity*n_females/2, replace=FALSE),c(1,4)],
 				if(adult_surv>0){	
-					cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F")},
+					cbind(animal=sample(females, adult_surv_f*n_females, replace=FALSE), sex="F")},
 				if(adult_surv>0){	
-					cbind(animal=sample(males, adult_surv*n_females, replace=FALSE), sex="M")},
-				imm[,c(1,4)]
+					cbind(animal=sample(males, adult_surv_m*n_females, replace=FALSE), sex="M")},
+				immigrants[,c(1,4)]
 			)
 		}else{
 			rbind(
+				## need to make sex-specific
 				ped[as.logical(rbinom(nrow(ped),1,juv_surv)),c(1,4)],
-				cbind(animal=females[as.logical(rbinom(length(females),1,adult_surv))], sex="F"),
-				cbind(animal=males[as.logical(rbinom(length(males),1,adult_surv))], sex="M")
+				cbind(animal=females[as.logical(rbinom(length(females),1,adult_surv_f))], sex="F"),
+				cbind(animal=males[as.logical(rbinom(length(males),1,adult_surv_m))], sex="M"),
+				immigrants[,c(1,4)]
 			)
 		}
+
+		pedigree <- rbind(pedigree,ped,immigrants)
+
+		## maybe we don't need this - redundant with cohort?
 	  next_year_ind$age<-(year+1) - pedigree[match(next_year_ind$animal,pedigree$animal),"cohort"]
 	  next_year_ind$year <- year+1
 	  dat[[year+1]] <- next_year_ind
