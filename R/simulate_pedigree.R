@@ -1,7 +1,7 @@
 
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
 
-between <- function(x,min,max) x>=min && x<=max
+between <- function(x,min,max) x>=min & x<=max
 
 general_check <- function(name,env, rate=TRUE, sex_specific=TRUE){
 	x <- get(name,pos=env)
@@ -9,9 +9,9 @@ general_check <- function(name,env, rate=TRUE, sex_specific=TRUE){
 	if(!is.vector(x)) stop(paste(name,"is not a vector"))
 	
 	if(rate){
-		if(!between(x,0,1)) stop(paste(name,"must be between 0 and 1"))	
+		if(!all(between(x,0,1))) stop(paste(name,"must be between 0 and 1"))	
 	}else{
-		if(!is.wholenumber(x) & x>0) stop(paste(name,"must be a whole number and >0"))	
+		if(!all(is.wholenumber(x) & x>0)) stop(paste(name,"must be a whole number and >0"))	
 	}
 	
 	
@@ -126,18 +126,44 @@ simulate_pedigree <- function(
 	# immigration <- 1- stoch_growth_rate
 
 
+
+
 	# make pedigree for base population
+	# pedigree <- data.frame(
+	# 	animal = paste0("0_",1:(n_females*2)),
+	# 	dam = NA,
+	# 	sire = NA,
+	# 	sex = rep(c("F","M"),each=n_females),
+	# 	## starting age structure for female and males, based on constant survival rate
+	# 	## we could delete age/cohort of these individuals in the output as that would be realistic to a real pedigree?
+	# 	cohort= -1 * c(
+	# 		if(adult_surv_f==0){
+	# 			rep(0,n_females)
+	# 	  }else{
+	# 		  rgeom(n_females,adult_surv_f)
+	# 	  },
+	# 	  if(adult_surv_m==0){
+	# 	  	rep(0,n_females)
+	# 	  }else{
+	# 	  	rgeom(n_females,adult_surv_m)
+	# 	  })
+	# )
+
+ 	yearly_recruits <- n_females*p_breed*fecundity*juv_surv/2
+	starting_n <- c(n_females,rep(yearly_recruits,afr-1))
+
 	pedigree <- data.frame(
-		animal = paste0("0_",1:(n_females*2)),
+		animal = paste0("0_",1:sum(starting_n*2)),# or could code them with their cohort. using 0 means all founder are the same
 		dam = NA,
 		sire = NA,
-		sex = rep(c("F","M"),each=n_females),
+		# equal sex ratio to start
+		sex = rep(c("F","M"),sum(starting_n)),
 		## starting age structure for female and males, based on constant survival rate
 		## we could delete age/cohort of these individuals in the output as that would be realistic to a real pedigree?
-		cohort= -1 * c(if(adult_surv_f==0){rep(0,n_females)}else{rgeom(n_females,adult_surv_f)},if(adult_surv_m==0){rep(0,n_females)}else{rgeom(n_females,adult_surv_m)})
+		cohort= rep(-1*(afr-1):0,c(n_females,rep(yearly_recruits,afr-1))*2)
+		## need to start sims with some age structure, otherwise with afr>1 the population size will drop after first year, as new offspring wont have recruited yet. So this way has founder that are recruited for the first afr-1 years. the new number of recruits per year is n_females*p_breed*fecundity*juv_surv for each sex
 	)
-
-# rgeom(n_females,adult_surv_f),rgeom(n_females,adult_surv_m))
+## could make some stochasticity in the starting number if constant_pop=FALSE
 
 
 	# make list that stores who is available to breed(or alive??) in each year
