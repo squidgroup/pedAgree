@@ -3,6 +3,20 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) 
 
 between <- function(x,min,max) x>=min & x<=max
 
+fill_sires <- function(n,p){
+	n_remaining<-n
+	sire <- 1
+	sires <- rep(NA,length=n)
+	while(n_remaining>0){
+		n_sired <- (rbinom(1,n_remaining,p))
+		if(n_sired>0){	 
+			sires[(n-sum(is.na(sires)) +1):(n-sum(is.na(sires)) + n_sired)] <- sire
+			n_remaining <- sum(is.na(sires))
+				 sire <- sire+1}
+	}
+	sires
+}
+
 general_check <- function(name,env, rate=TRUE, sex_specific=TRUE){
 	x <- get(name,pos=env)
 
@@ -40,8 +54,10 @@ general_check <- function(name,env, rate=TRUE, sex_specific=TRUE){
 #' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring
 #' @param adult_surv survival of adults across years
 #' @param immigration yearly immigration, as a proportion of starting number of females (n_females)
+#' @param p_polyandry probability that a female has any polyandry
 #' @param p_sire probability that 'social' male sires all offspring 
 #' @param p_retain probability that social partnership is retained
+
 #' @details 
 #' 
 #' @author Joel Pick - joel.l.pick@gmail.com
@@ -85,6 +101,7 @@ simulate_pedigree <- function(
 	juv_surv = 0.25,
 	adult_surv = 0.5,
 	immigration = 0,
+	p_polyandry = 0,
 	p_sire = 1, 
 	p_retain = 0, #
 	# polgyny_rate = 0,
@@ -250,14 +267,22 @@ simulate_pedigree <- function(
 			dam=rep(breeding_females,n_juv),
 			# EPP
 			sire=c(lapply(1:n_pair,function(i){
-					n_sired <- rbinom(1,n_juv[i],p_sire)
-					c(rep(social_male[i], n_sired), sample(males,n_juv[i]-n_sired,replace=TRUE))
-				}), recursive=TRUE),
+				## probability of any EPP
+				polyandry <- rbinom(1,1,p_polyandry)
+				if(polyandry){
+					## if there is EPP, how much
+					## this is calculated by sampling how many of the offspring the paired male sired, and then giving the same probability to subsequent males. This means that extra pair males will be few, and have several offspring if p_sire if high - thin this is more realistic
+					within_sires <- fill_sires(n_juv[i],p_sire)
+					c(social_male[i], sample(males,max(within_sires)-1,replace=FALSE))[within_sires]
+					# n_sired <- rbinom(1,n_juv[i],p_sire)
+					# c(rep(social_male[i], n_sired), sample(males,n_juv[i]-n_sired,replace=TRUE))
+				}else{
+					rep(social_male[i],n_juv[i])
+				}
+			}), recursive=TRUE),
 			#equal sex ratio
 			sex=sample(c("M","F"),sum(n_juv),replace=TRUE),
 			cohort=year)
-## could do something like n_sired until no offspring left, and then sample males to fill the male IDs
-
 
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,3]))
 		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,2]))
