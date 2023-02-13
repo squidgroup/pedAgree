@@ -51,6 +51,7 @@ general_check <- function(name,env, rate=TRUE, sex_specific=TRUE){
 #' @param afr age at first reproduction
 #' @param p_breed probability that a female breeds
 #' @param fecundity number of juveniles a female produces each year
+#' 
 #' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring
 #' @param adult_surv survival of adults across years
 #' @param immigration yearly immigration, as a proportion of starting number of females (n_females)
@@ -98,6 +99,7 @@ simulate_pedigree <- function(
 	afr=1,
 	p_breed = 1,
 	fecundity = 4,
+	fixed_fecundity = TRUE,
 	juv_surv = 0.25,
 	adult_surv = 0.5,
 	immigration = 0,
@@ -216,11 +218,12 @@ simulate_pedigree <- function(
 		# print(length(males))
 		# print(length(breeding_females))
 
-
 		# number of offspring per female
-		# n_juv <- rpois(n_pair,fecundity)
-		n_juv <- rep(fecundity,n_pair)
-
+		n_juv <- if(fixed_fecundity) {
+			rep(fecundity,n_pair)
+		}else{
+			rpois(n_pair,fecundity)
+		}
 		
 		males <- subset(dat[[year]],sex=="M"& age>=afr_m)$animal
 		breeding_males <- males[as.logical(rbinom(length(males),1,p_breed_m))]
