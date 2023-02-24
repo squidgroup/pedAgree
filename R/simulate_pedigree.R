@@ -269,14 +269,21 @@ simulate_pedigree <- function(
 			# fecundity
 			dam=rep(breeding_females,n_juv),
 			# EPP
+			### can make this more efficient - if p_polyandry=0 then rep(social_male,n_juv)
+			#if p_polyandry==1 & p_sire==0 then sample(males,n_juv*length(breeding_females))
+
 			sire=c(lapply(1:n_pair,function(i){
 				## probability of any EPP
 				polyandry <- rbinom(1,1,p_polyandry)
 				if(polyandry){
 					## if there is EPP, how much
 					## this is calculated by sampling how many of the offspring the paired male sired, and then giving the same probability to subsequent males. This means that extra pair males will be few, and have several offspring if p_sire if high - thin this is more realistic
-					within_sires <- fill_sires(n_juv[i],p_sire)
-					c(social_male[i], sample(males,max(within_sires)-1,replace=FALSE))[within_sires]
+					if(p_sire==0) {
+						sample(males,n_juv[i])
+					}else{
+						within_sires <- fill_sires(n_juv[i],p_sire)
+						c(social_male[i], sample(males,max(within_sires)-1,replace=FALSE))[within_sires]
+					}
 					# n_sired <- rbinom(1,n_juv[i],p_sire)
 					# c(rep(social_male[i], n_sired), sample(males,n_juv[i]-n_sired,replace=TRUE))
 				}else{
