@@ -3,20 +3,22 @@
 ## output pedigree and data structure?
 
 # rm(list=ls())
-	# years = 5
-	# n_females = 10
-	# p_breed = 1
-	# fecundity = 4
-	# fixed_fecundity = FALSE
-	# p_sire = 1
-	# p_retain = 0.8
-	# polgyny_rate = 0
-	# juv_surv = 0.5
-	# adult_surv = 0
-	# det = list(rates=c("fecundity"), G=1)
-	# immigration = 0
-	# constant_pop = TRUE 
-	# known_age_structure = FALSE
+# source("/Users/joelpick/github/squidPed/R/functions.R")
+# 	years = 5
+# 	n_females = 100
+# 	p_breed = 1
+# 	fecundity = 4
+# 	fixed_fecundity = FALSE
+# 	p_sire = 1
+# 	p_retain = 0.8
+# 	polgyny_rate = 0
+# 	juv_surv = 0.25
+# 	adult_surv = 0.5
+# 	det = list(rates=c("fecundity"), G=1)
+# 	immigration = 0
+# 	constant_pop = TRUE 
+# 	known_age_structure = FALSE
+#   verbose=TRUE
 
 
 
@@ -120,7 +122,7 @@ simulate_pedigree <- function(
 
 	pairs <- list()
 
-	# year=1
+	# year=2
 	for(year in 1:years){
 
 		# probability of breeding just on females? assume that male breeding is dependent on females?
@@ -170,26 +172,25 @@ simulate_pedigree <- function(
 		# residual variance
 		if(year==1){
 			## first years e = c+e, as dont know what c is (unless implement known ages)
-			f_e <- rnorm(n_pair, 0, C["fecundity","fecundity"] + E["fecundity","fecundity"])
+			f_e <- rnorm(n_pair, 0, sqrt(C["fecundity","fecundity"] + E["fecundity","fecundity"]))
 		}else{
-			f_e <- rnorm(n_pair, 0, E["fecundity","fecundity"])	
+			f_e <- rnorm(n_pair, 0, sqrt(E["fecundity","fecundity"]))	
 		}		
 		## save E in dat?
 
 		## multivariate E? residual covariance in survival and fecundity?
 
 		f_exp <- exp(fecundity_l + 
-			rowSums(cbind(
+			Matrix::rowSums(cbind(
 				bv[breeding_females, "fecundity"],
 				pe[breeding_females, "fecundity"],
-				if(year!=1) mg[bf_dams, "fecundity"],
-				if(year!=1) me[bf_dams, "fecundity"],
+				### with overlapping gens some of these might be NA?
+				if(year!=1) mg[match(bf_dams,rownames(mg)), "fecundity"],
+				if(year!=1) me[match(bf_dams,rownames(mg)), "fecundity"],
 				year_effect[year, "fecundity"],
 				if(year!=1) cohort_effect[bf_cohort, "fecundity"]
-						)
-					)
+				),na.rm=TRUE)
 			+ f_e)
-
 
 		# number of offspring per female
 		n_juv <- if(fixed_fecundity) {
@@ -247,7 +248,7 @@ simulate_pedigree <- function(
 		# js_e <- rnorm(n_pair, 0, E["juv_surv","juv_surv"])	
 			
 		js_exp <- pnorm(juv_surv_l + 
-			rowSums(cbind(
+			Matrix::rowSums(cbind(
 				bv[ped$animal, "juv_surv"]
 				, pe[ped$animal, "juv_surv"]
 				, mg[ped$dam, "juv_surv"]
@@ -256,7 +257,7 @@ simulate_pedigree <- function(
 				# , cohort_effect[year, "juv_surv"]
 				## there could be cohort covariance - juvenile survival and adult traits - bad conditions affect later life traits
 				## there could be year covariance - years where 
-			))
+			),na.rm=TRUE)
 			# + js_e
 			## don't think can have residual covariance - doesn't link to anything 
 		)
@@ -269,8 +270,9 @@ simulate_pedigree <- function(
 				### need to ensure equal sex ratio of recruits, otherwise population size fluctuations
 				# ped[sample(which(ped[,"sex"]=="F"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
 				# ped[sample(which(ped[,"sex"]=="M"), juv_surv*fecundity*n_females/2, replace=FALSE),c(1,4)],
-				ped[sample(which(ped[,"sex"]=="F"), js_exp*fecundity*n_females/2, replace=FALSE),c(1,4)],
-				ped[sample(which(ped[,"sex"]=="M"), js_exp*fecundity*n_females/2, replace=FALSE),c(1,4)],
+				ped[sample(which(ped[,"sex"]=="F"), juv_surv*fecundity*n_females/2, replace=FALSE, prob=js_exp[which(ped[,"sex"]=="F")]),c(1,4)],
+				### i think this sampling is right - needs checking
+				ped[sample(which(ped[,"sex"]=="M"), juv_surv*fecundity*n_females/2, replace=FALSE, prob=js_exp[which(ped[,"sex"]=="M")]),c(1,4)],
 				if(adult_surv>0){	
 					cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F")},
 				if(adult_surv>0){	
