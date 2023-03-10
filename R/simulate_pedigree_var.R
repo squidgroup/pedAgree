@@ -59,6 +59,8 @@ simulate_pedigree <- function(
 
 ## latent scale mean juvenile survival
 ## if using threshold, presumably can use pnorm/qnorm to get between observed and latent scale?
+  adult_surv_l <- qnorm(adult_surv, 0, sqrt(P["adult_surv","adult_surv"]+1))
+
   juv_surv_l <- qnorm(juv_surv, 0, sqrt(P["juv_surv","juv_surv"]+1))
 
   ## random effect means
@@ -173,8 +175,11 @@ simulate_pedigree <- function(
 		if(year==1){
 			## first years e = c+e, as dont know what c is (unless implement known ages)
 			f_e <- rnorm(n_pair, 0, sqrt(C["fecundity","fecundity"] + E["fecundity","fecundity"]))
+			# as_e <- rnorm(n_pair, 0, sqrt(C["adult_surv","adult_surv"] + E["adult_surv","adult_surv"]))
+			# for males and femaels
 		}else{
 			f_e <- rnorm(n_pair, 0, sqrt(E["fecundity","fecundity"]))	
+			# as_e <- rnorm(n_pair, 0, sqrt(E["adult_surv","adult_surv"]))	
 		}		
 		## save E in dat?
 
@@ -264,6 +269,37 @@ simulate_pedigree <- function(
 
 	## check the conversion works 
 
+		#breeding female mother IDs
+		f_dams <- pedigree$dam[match(females,pedigree$animal)]
+		m_dams <- pedigree$sire[match(males,pedigree$animal)]
+		#breeding female cohorts
+		f_cohort <- pedigree$cohort[match(females,pedigree$animal)]
+		m_cohort <- pedigree$cohort[match(males,pedigree$animal)]
+		
+
+#females[as.logical(rbinom(length(females),1,adult_surv))]
+		as_exp_f <- pnorm(adult_surv_l + 
+			Matrix::rowSums(cbind(
+				bv[females, "adult_surv"],
+				pe[females, "adult_surv"],
+				if(year!=1) mg[match(f_dams,rownames(mg)), "adult_surv"],
+				if(year!=1) me[match(f_dams,rownames(me)), "adult_surv"],
+				year_effect[year, "adult_surv"],
+				if(year!=1) cohort_effect[f_cohort, "adult_surv"]
+			),na.rm=TRUE)
+			# + as_e
+		)
+		as_exp_m <- pnorm(adult_surv_l + 
+			Matrix::rowSums(cbind(
+				bv[males, "adult_surv"],
+				pe[males, "adult_surv"],
+				if(year!=1) mg[match(m_dams,rownames(mg)), "adult_surv"],
+				if(year!=1) me[match(m_dams,rownames(me)), "adult_surv"],
+				year_effect[year, "adult_surv"],
+				if(year!=1) cohort_effect[m_cohort, "adult_surv"]
+			),na.rm=TRUE)
+			# + as_e
+		)
 
 		next_year_ind <- if(constant_pop){
 			rbind(
@@ -274,9 +310,9 @@ simulate_pedigree <- function(
 				### i think this sampling is right - needs checking
 				ped[sample(which(ped[,"sex"]=="M"), juv_surv*fecundity*n_females/2, replace=FALSE, prob=js_exp[which(ped[,"sex"]=="M")]),c(1,4)],
 				if(adult_surv>0){	
-					cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F")},
+					cbind(animal=sample(females, adult_surv*n_females, replace=FALSE), sex="F")},#, prob=as_exp_f
 				if(adult_surv>0){	
-					cbind(animal=sample(males, adult_surv*n_females, replace=FALSE), sex="M")}
+					cbind(animal=sample(males, adult_surv*n_females, replace=FALSE), sex="M")}#, prob=as_exp_m
 			)
 		}else{
 			rbind(
@@ -286,9 +322,9 @@ simulate_pedigree <- function(
 				
 				## variation in AS here
 				if(adult_surv>0){	
-				cbind(animal=females[as.logical(rbinom(length(females),1,adult_surv))], sex="F")},
+				cbind(animal=females[as.logical(rbinom(length(females),1,as_exp_f))], sex="F")},
 				if(adult_surv>0){	
-				cbind(animal=males[as.logical(rbinom(length(males),1,adult_surv))], sex="M")}
+				cbind(animal=males[as.logical(rbinom(length(males),1,as_exp_m))], sex="M")}
 			)
 		}
 	  next_year_ind$age <- (year+1) - pedigree[match(next_year_ind$animal,pedigree$animal),"cohort"]
