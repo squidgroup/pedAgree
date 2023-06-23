@@ -202,6 +202,8 @@ simulate_pedigree <- function(
 			rep(fecundity,n_pair)
 		}else{
 			rpois(n_pair,f_exp)
+			# rcomp(n_pair, mu = f_exp, nu = 2)
+
 		}
 
 	if(verbose) cat("year",year,"fecundity \n")
