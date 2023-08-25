@@ -129,7 +129,7 @@ simulate_pedigree <- function(
 	det_growth_rate_f <- (p_breed_f * juv_surv_f * fecundity)/2 + adult_surv_f + immigration_f
 
 	# male growth rate probably doesn't matter as long as all eggs are fertilised? although at some point would run out of males
-	# det_growth_rate_m <- (juv_surv_m * fecundity)/2 + adult_surv_m + immigration_m
+	# det_growth_rate_m <- (p_breed_m *juv_surv_m * fecundity)/2 + adult_surv_m + immigration_m
 
 	if(det_growth_rate_f>1) warning("growth rate is more than 1") 
   if(det_growth_rate_f<1) warning("growth rate is less than 1") 
@@ -354,12 +354,12 @@ simulate_pedigree <- function(
 		next_year_ind <- if(constant_pop){
 			rbind(
 				### need to ensure equal sex ratio of recruits, otherwise population size fluctuations
-				ped[sample(which(ped[,"sex"]=="F"), juv_surv_f*fecundity*n_females/2, replace=FALSE),c(1,4)],
-				ped[sample(which(ped[,"sex"]=="M"), juv_surv_m*fecundity*n_females/2, replace=FALSE),c(1,4)],
-				if(adult_surv>0){	
-					cbind(animal=sample(females, adult_surv_f*n_females, replace=FALSE), sex="F")},
-				if(adult_surv>0){	
-					cbind(animal=sample(males, adult_surv_m*n_females, replace=FALSE), sex="M")},
+				ped[sample(which(ped[,"sex"]=="F"), round(juv_surv_f*fecundity*n_females/2), replace=FALSE),c(1,4)],
+				ped[sample(which(ped[,"sex"]=="M"), round(juv_surv_m*fecundity*n_females/2), replace=FALSE),c(1,4)],
+				if(adult_surv_f>0){	
+					cbind(animal=sample(females, round(adult_surv_f*n_females), replace=FALSE), sex="F")},
+				if(adult_surv_m>0){	
+					cbind(animal=sample(males, round(adult_surv_m*n_females), replace=FALSE), sex="M")},
 				immigrants[,c(1,4)]
 			)
 		}else{
