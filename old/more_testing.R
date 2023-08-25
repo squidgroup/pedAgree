@@ -82,13 +82,13 @@ source("/Users/joelpick/github/squidPed/R/simulate_pedigree_var.R")
 
 pop<-simulate_pedigree(
 	years = 10,
-	n_females = 10000,
+	n_females = 1000,
 	fecundity = 4,
 	fixed_fecundity=FALSE,
-	juv_surv = 0.5,
+	juv_surv = 0.25,
 	p_sire = 0,
-	adult_surv = 0,
-	det = list(rates=c("juv_surv"), G=0.05),
+	adult_surv = 0.5,
+	det = list(rates=c("adult_surv"), G=0.1),
 	constant_pop=FALSE,
 	verbose=FALSE
 	)
