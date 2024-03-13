@@ -1,17 +1,12 @@
 # squidPed
 (soon-to-be) R package for pedigree simulations
 
-## Data
-Contains all data, in two folders
+## Installation
 
-- Raw, for all raw data files
-- Intermediate, for all processed data
+devtools::install_github("squidgroup/squidPed")
+library(squidPed)
 
-## docs
-- Contains various documentation for the project
 
-## papers
-Contains pdfs of papers
+## Use
 
-## R
-Contains all R code
+Just one function exported at the moment `simulate_pedigree()`. This takes a bunch of parameters (many can be sex specific), to generate stochastic pedigrees via individual based simulations
