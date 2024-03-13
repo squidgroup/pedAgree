@@ -150,7 +150,7 @@ adult_survival <- function(ped, sex_specific=TRUE){
 #	immigration
 ######
 immigration <- function(ped, sex_specific=TRUE){
-	founders <- ped$animal[is.na(ped$sire) & is.na(ped$sire)]
+	founders <- ped$animal[is.na(ped$dam) & is.na(ped$sire)]
 	year_d <- aggregate(cohort~dam,subset(ped,dam%in%founders),min)$cohort
 	year_s <- aggregate(cohort~sire,subset(ped,sire%in%founders),min)$cohort
 	all_d <- table(year_d)

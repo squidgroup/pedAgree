@@ -6,7 +6,7 @@
 # source("/Users/joelpick/github/squidPed/R/functions.R")
 # 	years = 5
 # 	n_females = 100
-# 	p_breed = 1
+# 	p_breed = 0.7
 # 	fecundity = 4
 # 	fixed_fecundity = FALSE
 # 	p_sire = 1
@@ -24,7 +24,7 @@
 
 ## first go - make genetic variation in JS and F
 
-simulate_pedigree <- function(
+simulate_pedigree_var <- function(
 	years = 5,
 	n_females = 50,
 	
@@ -59,9 +59,9 @@ simulate_pedigree <- function(
 
 ## latent scale mean juvenile survival
 ## if using threshold, presumably can use pnorm/qnorm to get between observed and latent scale?
-  adult_surv_l <- qnorm(adult_surv, 0, sqrt(P["adult_surv","adult_surv"]+1))
+  adult_surv_l <- stats::qnorm(adult_surv, 0, sqrt(P["adult_surv","adult_surv"]+1))
 
-  juv_surv_l <- qnorm(juv_surv, 0, sqrt(P["juv_surv","juv_surv"]+1))
+  juv_surv_l <- stats::qnorm(juv_surv, 0, sqrt(P["juv_surv","juv_surv"]+1))
 
   ## random effect means
 	mus <- rep(0,ncol(G))
@@ -124,7 +124,7 @@ simulate_pedigree <- function(
 
 	pairs <- list()
 
-	# year=2
+	# year=1
 	for(year in 1:years){
 
 		# probability of breeding just on females? assume that male breeding is dependent on females?
@@ -151,7 +151,7 @@ simulate_pedigree <- function(
 			social_male<-sapply(breeding_females,function(bf){
 				if(bf %in% pairs[[year-1]]$female 
 				& pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)] %in% males
-				& rbinom(1,1,p_retain)==1 ){
+				& stats::rbinom(1,1,p_retain)==1 ){
 				  pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)]
 				}else{
 					sample(males,1, replace=TRUE)
@@ -174,11 +174,11 @@ simulate_pedigree <- function(
 		# residual variance
 		if(year==1){
 			## first years e = c+e, as dont know what c is (unless implement known ages)
-			f_e <- rnorm(n_pair, 0, sqrt(C["fecundity","fecundity"] + E["fecundity","fecundity"]))
+			f_e <- stats::rnorm(n_pair, 0, sqrt(C["fecundity","fecundity"] + E["fecundity","fecundity"]))
 			# as_e <- rnorm(n_pair, 0, sqrt(C["adult_surv","adult_surv"] + E["adult_surv","adult_surv"]))
 			# for males and femaels
 		}else{
-			f_e <- rnorm(n_pair, 0, sqrt(E["fecundity","fecundity"]))	
+			f_e <- stats::rnorm(n_pair, 0, sqrt(E["fecundity","fecundity"]))	
 			# as_e <- rnorm(n_pair, 0, sqrt(E["adult_surv","adult_surv"]))	
 		}		
 		## save E in dat?
@@ -201,7 +201,7 @@ simulate_pedigree <- function(
 		n_juv <- if(fixed_fecundity) {
 			rep(fecundity,n_pair)
 		}else{
-			rpois(n_pair,f_exp)
+			stats::rpois(n_pair,f_exp)
 			# rcomp(n_pair, mu = f_exp, nu = 2)
 
 		}
@@ -217,7 +217,7 @@ simulate_pedigree <- function(
 			dam=rep(breeding_females,n_juv),
 			# EPP
 			sire=c(lapply(1:n_pair,function(i){
-					n_sired <- rbinom(1,n_juv[i],p_sire)
+					n_sired <- stats::rbinom(1,n_juv[i],p_sire)
 					c(rep(social_male[i], n_sired), sample(males,n_juv[i]-n_sired,replace=TRUE))
 				}), recursive=TRUE),
 			#equal sex ratio
@@ -254,7 +254,7 @@ simulate_pedigree <- function(
 		# same as PE
 		# js_e <- rnorm(n_pair, 0, E["juv_surv","juv_surv"])	
 			
-		js_exp <- pnorm(juv_surv_l + 
+		js_exp <- stats::pnorm(juv_surv_l + 
 			Matrix::rowSums(cbind(
 				bv[ped$animal, "juv_surv"]
 				, pe[ped$animal, "juv_surv"]
@@ -280,7 +280,7 @@ simulate_pedigree <- function(
 		
 
 #females[as.logical(rbinom(length(females),1,adult_surv))]
-		as_exp_f <- pnorm(adult_surv_l + 
+		as_exp_f <- stats::pnorm(adult_surv_l + 
 			Matrix::rowSums(cbind(
 				bv[females, "adult_surv"],
 				pe[females, "adult_surv"],
@@ -291,7 +291,7 @@ simulate_pedigree <- function(
 			),na.rm=TRUE)
 			# + as_e
 		)
-		as_exp_m <- pnorm(adult_surv_l + 
+		as_exp_m <- stats::pnorm(adult_surv_l + 
 			Matrix::rowSums(cbind(
 				bv[males, "adult_surv"],
 				pe[males, "adult_surv"],
@@ -334,9 +334,34 @@ simulate_pedigree <- function(
 	  dat[[year+1]] <- next_year_ind
 	  ### save fecundity, survival etc into dat, so makes analysis easier
 	if(verbose) cat("year",year,"next year \n")
+
+		### update dat to include sruvvial and reproduction in the current year 
+				dat[[year]]$survival <- as.numeric(dat[[year]]$animal %in% next_year_ind$animal)
+			dat[[year]]$fecundity <- 0
+			# dat[[year]]$recruits <- 0
+
+			## female fecundity
+			index_f<-which(dat[[year]]$animal%in%breeding_females)
+			dat[[year]]$fecundity[index_f] <- n_juv[match(dat[[year]]$animal[index_f],breeding_females)]
+
+			##male fecundity
+			male_fecundity<-table(ped$sire)
+			index_m <- which(dat[[year]]$animal%in%names(male_fecundity))
+			dat[[year]]$fecundity[index_m] <- male_fecundity[match(dat[[year]]$animal[index_m],names(male_fecundity))]
+
+			
+			## if in last year, the next year in wont have any survival or reproudction
+		if(year ==years){
+			dat[[year+1]]$survival <- NA
+			dat[[year+1]]$fecundity <- NA
+		}
+
+			#dam_fec <- table(ped$dam)
+		
+
 	}
 	
 
-	return(list(pedigree=pedigree,data_str=do.call(rbind,dat), year_effect, cohort_effect, bv,pe,mg,me))
+	return(list(pedigree=pedigree,data_str=do.call(rbind,dat), y=year_effect, c=cohort_effect, a=bv,pe=pe,mg=mg,me=me))
 
 }

@@ -1,68 +1,26 @@
 
-is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
 
-between <- function(x,min,max) x>=min & x<=max
-
-fill_sires <- function(n,p){
-	n_remaining<-n
-	sire <- 1
-	sires <- rep(NA,length=n)
-	while(n_remaining>0){
-		n_sired <- (rbinom(1,n_remaining,p))
-		if(n_sired>0){	 
-			sires[(n-sum(is.na(sires)) +1):(n-sum(is.na(sires)) + n_sired)] <- sire
-			n_remaining <- sum(is.na(sires))
-				 sire <- sire+1}
-	}
-	sires
-}
-
-general_check <- function(name,env, rate=TRUE, sex_specific=TRUE){
-	x <- get(name,pos=env)
-
-	if(!is.vector(x)) stop(paste(name,"is not a vector"))
-	
-	if(rate){
-		if(!all(between(x,0,1))) stop(paste(name,"must be between 0 and 1"))	
-	}else{
-		if(!all(is.wholenumber(x) & x>0)) stop(paste(name,"must be a whole number and >0"))	
-	}
-	
-	
-	if(sex_specific){
-		if(!length(x) %in% 1:2) stop(paste(name,"should be length 1 or 2"))
-	
-		assign(paste0(name,"_f"),x[1],pos=env)
-		if(length(x)==2){	
-			assign(paste0(name,"_m"),x[2],pos=env)
-		}else{
-			assign(paste0(name,"_m"),x[1],pos=env)
-		}
-	}else{
-		if(!length(x) == 1) stop(paste(name,"should be length 1"))
-	}
-}
-
-
-#' @title simulated_variance
-#' @description Calculate simulated mean and variance in response variable(s)
+#' @title simulate_pedigree
+#' @description Individual based simulation based on specified demographic parameters.
 #' @param years number of time steps
 #' @param n_females starting number of breeding females
 #' @param afr age at first reproduction
 #' @param p_breed probability that a female breeds
 #' @param fecundity number of juveniles a female produces each year
-#' 
+#' @param fixed_fecundity logical. is fecundity fixed or drawn from a Poisson distribution
 #' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring
 #' @param adult_surv survival of adults across years
 #' @param immigration yearly immigration, as a proportion of starting number of females (n_females)
 #' @param p_polyandry probability that a female has any polyandry
 #' @param p_sire probability that 'social' male sires all offspring 
 #' @param p_retain probability that social partnership is retained
+#' @param	constant_pop Logical. Should there be stochastic variation in population size
+#' @param known_age_structure Currently not in use
 
-#' @details 
+#' @details ...
 #' 
 #' @author Joel Pick - joel.l.pick@gmail.com
-#' @return A list with means and variance at each level
+#' @return A list with two elements: population data and a pedigree
 #' @examples
 #' \dontrun{
 #' }
@@ -145,7 +103,9 @@ simulate_pedigree <- function(
 	# immigration <- 1- stoch_growth_rate
 
 
-
+###
+# MAKE STARTING POPULATION
+###
 
 	# make pedigree for base population
 	# pedigree <- data.frame(
@@ -202,14 +162,17 @@ simulate_pedigree <- function(
 	for(year in 1:years){
 		## import individuals that are around as adults pre-breeding (dat[[year]])
 
-		# probability of breeding just on females? assume that male breeding is dependent on females?
+
+	####
+	# BREEDING FEMALE AND MALE, AND PAIRING
+	####
 
 		# get vectors of females and males available to breed, accounting for the probability of females breeding
 #		females <- subset(dat[[year]],sex=="F")$animal
 		females <- subset(dat[[year]],sex=="F" & age>=afr_f)$animal
 		## maybe just dont include these individuals in dat?
 
-		breeding_females <- females[as.logical(rbinom(length(females),1,p_breed_f))]
+		breeding_females <- females[as.logical(stats::rbinom(length(females),1,p_breed_f))]
 
 		# dat[[year]][(match(females,dat[[year]]$animal)),"age"]
 
@@ -218,40 +181,45 @@ simulate_pedigree <- function(
 		# print(length(males))
 		# print(length(breeding_females))
 
-		# number of offspring per female
-		n_juv <- if(fixed_fecundity) {
-			rep(fecundity,n_pair)
-		}else{
-			rpois(n_pair,fecundity)
-		}
 		
 		males <- subset(dat[[year]],sex=="M"& age>=afr_m)$animal
-		breeding_males <- males[as.logical(rbinom(length(males),1,p_breed_m))]
+		breeding_males <- males[as.logical(stats::rbinom(length(males),1,p_breed_m))]
 
-### for each female
-### start with 'social' male from previous year
-### how many eggs does he sire of total, with probability p_polyandry
-### randomly choose a different male, with probability p_polyandry
-### how many of the remaining eggs does he sire
-### continue until all eggs are sired		
 
+
+		sample_males <- function(females,males){
+			## when more breeding females, then all males are mated, and then sampled for extra ones
+			if(length(females)>=length(males)){
+				c(sample(males, replace = FALSE),sample(males,length(females)-length(males), replace = FALSE))
+			}else{
+				sample(males, length(females), replace=FALSE)
+			}
+		}
 		
 		### assign 'social' male
-		if(year==1 || adult_surv==0){ # or adult_surv=0?
-			## should this be with replacement?
-			social_male<-sample(breeding_males, n_pair, replace=FALSE)	#TURE?
+		if(p_retain==0 || adult_surv==0 || year==1){ 
+			## when there is no pairing to be done, just take random males, :
+			social_male <- sample_males(breeding_females,breeding_males)
 		}else{
 			social_male<-sapply(breeding_females,function(bf){
-				if(bf %in% pairs[[year-1]]$female 
-				& pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)] %in% males
-				& rbinom(1,1,p_retain)==1 ){
+				## MAKE VECTOR OF THOSE PAIRING UP AGAIN, then assign remaining males 
+				if(bf %in% pairs[[year-1]]$female
+				# female bred in the last year 
+				& pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)] %in% breeding_males
+				# and paired male is breeding this year
+				& stats::rbinom(1,1,p_retain)==1
+				# and they retain each other
+				 ){
 				  pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)]
 				}else{
-					sample(males,1, replace=TRUE)
+					NA
 				}
 			})
+			social_male[is.na(social_male)] <- sample_males(breeding_females[is.na(social_male)], breeding_males[!breeding_males%in%social_male])
+			# for the ones that havent been assigned, sample the males. 
+			#there is a potential issue here if the number of females is larger than the males, then the males being chosen to sire the unpaired females will get lots of pairings, but the ones already paired wont get any extra.
 		}
-		## what do do with probability of breeding and mate retention?!
+		## what do do with probability of breeding and mate retention?! If mate retention is 1, and one member of the pair doesnt breed once, then they will end up swapping, so there will be some level of divorce
 		
 		
 # if female existed last year, who was male. else sample new male
@@ -263,6 +231,31 @@ simulate_pedigree <- function(
 			male = social_male
 			)		
 
+
+	####
+	# FEMALE FECUNDITY
+	####
+
+		# number of offspring per female
+		n_juv <- if(fixed_fecundity) {
+			rep(fecundity,n_pair)
+		}else{
+			stats::rpois(n_pair,fecundity)
+		}
+
+
+	####
+	# PATERNITY AND PEDIGREE CREATION
+	####
+
+### for each female
+### start with 'social' male 
+### how many eggs does he sire of total, with probability p_polyandry
+### randomly choose a different male, with probability p_polyandry
+### how many of the remaining eggs does he sire
+### continue until all eggs are sired		
+
+# print(year)
 		## make ped incorporating EPP and fecundity
 		ped <- data.frame(
 			animal=paste0(year,"_",1:sum(n_juv)),
@@ -271,18 +264,17 @@ simulate_pedigree <- function(
 			# EPP
 			### can make this more efficient - if p_polyandry=0 then rep(social_male,n_juv)
 			#if p_polyandry==1 & p_sire==0 then sample(males,n_juv*length(breeding_females))
-
 			sire=c(lapply(1:n_pair,function(i){
 				## probability of any EPP
-				polyandry <- rbinom(1,1,p_polyandry)
+				polyandry <- stats::rbinom(1,1,p_polyandry)
 				if(polyandry){
 					## if there is EPP, how much
-					## this is calculated by sampling how many of the offspring the paired male sired, and then giving the same probability to subsequent males. This means that extra pair males will be few, and have several offspring if p_sire if high - thin this is more realistic
+					## this is calculated by sampling how many of the offspring the paired male sired, and then giving the same probability to subsequent males. This means that extra pair males will be few, and have several offspring if p_sire if high - think this is more realistic
 					if(p_sire==0) {
-						sample(males,n_juv[i])
+						sample(breeding_males,n_juv[i])
 					}else{
 						within_sires <- fill_sires(n_juv[i],p_sire)
-						c(social_male[i], sample(males,max(within_sires)-1,replace=FALSE))[within_sires]
+						c(social_male[i], sample(breeding_males,max(within_sires)-1,replace=FALSE))[within_sires]
 					}
 					# n_sired <- rbinom(1,n_juv[i],p_sire)
 					# c(rep(social_male[i], n_sired), sample(males,n_juv[i]-n_sired,replace=TRUE))
@@ -304,7 +296,7 @@ simulate_pedigree <- function(
 		n_imm <- if(constant_pop){
 			c(immigration_f,immigration_m)*n_females
 		}else{
-			rbinom(2,n_females,c(immigration_f,immigration_m))
+			stats::rbinom(2,n_females,c(immigration_f,immigration_m))
 		}
 		
 		imm_females <- if(n_imm[1]>0){
@@ -365,9 +357,9 @@ simulate_pedigree <- function(
 		}else{
 			rbind(
 				## need to make sex-specific
-				ped[as.logical(rbinom(nrow(ped),1,juv_surv)),c(1,4)],
-				cbind(animal=females[as.logical(rbinom(length(females),1,adult_surv_f))], sex="F"),
-				cbind(animal=males[as.logical(rbinom(length(males),1,adult_surv_m))], sex="M"),
+				ped[as.logical(stats::rbinom(nrow(ped),1,juv_surv)),c(1,4)],
+				cbind(animal=females[as.logical(stats::rbinom(length(females),1,adult_surv_f))], sex="F"),
+				cbind(animal=males[as.logical(stats::rbinom(length(males),1,adult_surv_m))], sex="M"),
 				immigrants[,c(1,4)]
 			)
 		}
