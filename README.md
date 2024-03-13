@@ -3,9 +3,10 @@
 
 ## Installation
 
+```
 devtools::install_github("squidgroup/squidPed")
 library(squidPed)
-
+```
 
 ## Use
 
