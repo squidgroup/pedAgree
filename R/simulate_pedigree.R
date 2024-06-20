@@ -186,15 +186,6 @@ simulate_pedigree <- function(
 		breeding_males <- males[as.logical(stats::rbinom(length(males),1,p_breed_m))]
 
 
-
-		sample_males <- function(females,males){
-			## when more breeding females, then all males are mated, and then sampled for extra ones
-			if(length(females)>=length(males)){
-				c(sample(males, replace = FALSE),sample(males,length(females)-length(males), replace = TRUE))
-			}else{
-				sample(males, length(females), replace=FALSE)
-			}
-		}
 		
 		### assign 'social' male
 		if(p_retain==0 || adult_surv==0 || year==1){ 
@@ -215,7 +206,11 @@ simulate_pedigree <- function(
 					NA
 				}
 			})
-			social_male[is.na(social_male)] <- sample_males(breeding_females[is.na(social_male)], breeding_males[!breeding_males%in%social_male])
+			social_male[is.na(social_male)] <- sample_males(
+				female = breeding_females[is.na(social_male)], 
+				males = breeding_males, 
+				unpaired_males = breeding_males[!breeding_males%in%social_male]
+				)
 			# for the ones that havent been assigned, sample the males. 
 			#there is a potential issue here if the number of females is larger than the males, then the males being chosen to sire the unpaired females will get lots of pairings, but the ones already paired wont get any extra.
 		}
@@ -355,11 +350,14 @@ simulate_pedigree <- function(
 				immigrants[,c(1,4)]
 			)
 		}else{
+			## need to make sex-specific
+			next_year_juv <- ped[as.logical(stats::rbinom(nrow(ped),1,juv_surv)),c(1,4)]
+			next_year_AF <- females[as.logical(stats::rbinom(length(females),1,adult_surv_f))]
+			next_year_AM <- males[as.logical(stats::rbinom(length(males),1,adult_surv_m))]
 			rbind(
-				## need to make sex-specific
-				ped[as.logical(stats::rbinom(nrow(ped),1,juv_surv)),c(1,4)],
-				cbind(animal=females[as.logical(stats::rbinom(length(females),1,adult_surv_f))], sex="F"),
-				cbind(animal=males[as.logical(stats::rbinom(length(males),1,adult_surv_m))], sex="M"),
+				next_year_juv,
+				if(length(next_year_AF)){cbind(animal=next_year_AF, sex="F")},
+				if(length(next_year_AM)){cbind(animal=next_year_AM, sex="M")},
 				immigrants[,c(1,4)]
 			)
 		}
@@ -370,8 +368,18 @@ simulate_pedigree <- function(
 	  next_year_ind$age<-(year+1) - pedigree[match(next_year_ind$animal,pedigree$animal),"cohort"]
 	  next_year_ind$year <- year+1
 	  dat[[year+1]] <- next_year_ind
+
+	  if(length(unique(next_year_ind$sex))==1){
+	  	message("One sex went extinct in year ", year)
+	  	break
+	  }
+	  if(length(unique(next_year_ind$sex))==0){
+	  	message("Population went extinct in year ", year)
+	  	break
+	  }
 	}
 
 	return(list(pedigree=pedigree,data_str=do.call(rbind,dat)))
 
 }
+
