@@ -16,6 +16,8 @@
 #' @param p_retain probability that social partnership is retained
 #' @param	constant_pop Logical. Should there be stochastic variation in population size
 #' @param known_age_structure Currently not in use
+#' @param verbose logical - print simulation progress? useful for debugging
+
 
 #' @details ...
 #' 
@@ -66,7 +68,8 @@ simulate_pedigree <- function(
 	p_retain = 0, #
 	# polgyny_rate = 0,
 	constant_pop = TRUE ,
-	known_age_structure = FALSE){
+	known_age_structure = FALSE,
+	verbose =FALSE){
 
   options(stringsAsFactors=FALSE) # as long as later version of R - dont need
 
@@ -154,6 +157,9 @@ simulate_pedigree <- function(
 		age= 1-pedigree$cohort, 
 		year= 1
 		)
+
+	if(verbose) cat("initial sims done \n")
+
 
 	## stores male-female pairings across years
 	pairs <- list()
@@ -271,7 +277,8 @@ simulate_pedigree <- function(
 					}else{
 						within_sires <- fill_sires(n_juv[i],p_sire)
 						if(length(within_sires)>0){
-							c(social_male[i], sample(breeding_males,max(within_sires)-1,replace=FALSE))[within_sires]
+							c(social_male[i], sample(breeding_males,max(within_sires)-1,replace=TRUE))[within_sires]
+							## have put replace=TRUE as if there are few males this might not work - some males might get chosen twice, but this will likely only happen when N is low, and so isnt unrealistic anyway
 						}else{ NULL }
 					}
 					# n_sired <- rbinom(1,n_juv[i],p_sire)
