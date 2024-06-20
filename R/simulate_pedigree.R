@@ -190,7 +190,7 @@ simulate_pedigree <- function(
 		sample_males <- function(females,males){
 			## when more breeding females, then all males are mated, and then sampled for extra ones
 			if(length(females)>=length(males)){
-				c(sample(males, replace = FALSE),sample(males,length(females)-length(males), replace = FALSE))
+				c(sample(males, replace = FALSE),sample(males,length(females)-length(males), replace = TRUE))
 			}else{
 				sample(males, length(females), replace=FALSE)
 			}
