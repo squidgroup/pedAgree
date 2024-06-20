@@ -259,7 +259,8 @@ simulate_pedigree <- function(
 			# EPP
 			### can make this more efficient - if p_polyandry=0 then rep(social_male,n_juv)
 			#if p_polyandry==1 & p_sire==0 then sample(males,n_juv*length(breeding_females))
-			sire=c(lapply(1:n_pair,function(i){
+			sire=c(
+				lapply(1:n_pair,function(i){
 				## probability of any EPP
 				polyandry <- stats::rbinom(1,1,p_polyandry)
 				if(polyandry){
@@ -269,14 +270,17 @@ simulate_pedigree <- function(
 						sample(breeding_males,n_juv[i])
 					}else{
 						within_sires <- fill_sires(n_juv[i],p_sire)
-						c(social_male[i], sample(breeding_males,max(within_sires)-1,replace=FALSE))[within_sires]
+						if(length(within_sires)>0){
+							c(social_male[i], sample(breeding_males,max(within_sires)-1,replace=FALSE))[within_sires]
+						}else{ NULL }
 					}
 					# n_sired <- rbinom(1,n_juv[i],p_sire)
 					# c(rep(social_male[i], n_sired), sample(males,n_juv[i]-n_sired,replace=TRUE))
 				}else{
 					rep(social_male[i],n_juv[i])
 				}
-			}), recursive=TRUE),
+			})
+				, recursive=TRUE),
 			#equal sex ratio
 			sex=sample(c("M","F"),sum(n_juv),replace=TRUE),
 			cohort=year)
