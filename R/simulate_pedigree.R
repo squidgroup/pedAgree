@@ -216,7 +216,7 @@ simulate_pedigree <- function(
 				}
 			})
 			social_male[is.na(social_male)] <- sample_males(
-				female = breeding_females[is.na(social_male)], 
+				females = breeding_females[is.na(social_male)], 
 				males = breeding_males, 
 				unpaired_males = breeding_males[!breeding_males%in%social_male]
 				)

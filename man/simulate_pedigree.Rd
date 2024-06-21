@@ -11,14 +11,15 @@ simulate_pedigree(
   p_breed = 1,
   fecundity = 4,
   fixed_fecundity = TRUE,
-  juv_surv = 0.25,
-  adult_surv = 0.5,
-  immigration = 0,
   p_polyandry = 0,
   p_sire = 1,
   p_retain = 0,
+  juv_surv = 0.25,
+  adult_surv = 0.5,
+  immigration = 0,
   constant_pop = TRUE,
-  known_age_structure = FALSE
+  known_age_structure = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -34,27 +35,29 @@ simulate_pedigree(
 
 \item{fixed_fecundity}{logical. is fecundity fixed or drawn from a Poisson distribution}
 
-\item{juv_surv}{survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring}
-
-\item{adult_surv}{survival of adults across years}
-
-\item{immigration}{yearly immigration, as a proportion of starting number of females (n_females)}
-
 \item{p_polyandry}{probability that a female has any polyandry}
 
 \item{p_sire}{probability that 'social' male sires all offspring}
 
 \item{p_retain}{probability that social partnership is retained}
 
+\item{juv_surv}{survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring}
+
+\item{adult_surv}{survival of adults across years}
+
+\item{immigration}{yearly immigration, as a proportion of starting number of females (n_females)}
+
 \item{constant_pop}{Logical. Should there be stochastic variation in population size}
 
 \item{known_age_structure}{Currently not in use}
+
+\item{verbose}{logical - print simulation progress? useful for debugging}
 }
 \value{
 A list with two elements: population data and a pedigree
 }
 \description{
-Individual based simulation based on specified demographic parameters
+Individual based simulation based on specified demographic parameters.
 }
 \details{
 ...
