@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Joel", "Pick", email = "joel.l.pick@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: Individual based simulations 
+Description: A simulation based tool to generate demographically realistic pedigrees through the use of individual based simulations.
 URL: https://github.com/squidgroup/squidPed
 BugReports: https://github.com/squidgroup/squidPed/issues
 License: MIT + file LICENSE
@@ -14,4 +14,4 @@ Imports:
     Matrix
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.3.1
