@@ -2,7 +2,7 @@
 
 #' @title simulate_pedigree
 #' @description Individual based simulation based on specified demographic parameters.
-#' @param years number of time steps
+#' @param years number of time steps/synchronous reproductive events
 #' @param n_females starting number of breeding females
 #' @param afr age at first reproduction
 #' @param p_breed probability that a female breeds
@@ -235,6 +235,8 @@ simulate_pedigree <- function(
 	####
 	# FEMALE FECUNDITY
 	####
+#https://stat.ethz.ch/pipermail/r-help/2005-May/070680.html
+# rztpois <- function(N, lambda) stats::qpois(stats::runif(N, stats::dpois(0, lambda), 1), lambda)
 
 		# number of offspring per female
 		n_juv <- if(fixed_fecundity) {
