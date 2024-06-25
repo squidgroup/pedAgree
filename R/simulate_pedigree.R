@@ -2,21 +2,21 @@
 
 #' @title simulate_pedigree
 #' @description Individual based simulation based on specified demographic parameters.
-#' @param years number of time steps/synchronous reproductive events
-#' @param n_females starting number of breeding females
-#' @param afr age at first reproduction
-#' @param p_breed probability that a female breeds
-#' @param fecundity number of juveniles a female produces each year
-#' @param fixed_fecundity logical. is fecundity fixed or drawn from a Poisson distribution
-#' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring
-#' @param adult_surv survival of adults across years
-#' @param immigration yearly immigration, as a proportion of starting number of females (n_females)
-#' @param p_polyandry probability that a female has any polyandry
-#' @param p_sire probability that 'social' male sires all offspring 
-#' @param p_retain probability that social partnership is retained
+#' @param years Integer. Number of time steps/synchronous reproductive events
+#' @param n_females Integer. Starting number of breeding females
+#' @param afr Integer. Age at first reproduction
+#' @param p_breed Probability that a female breeds, must be between 0 and 1.
+#' @param fecundity Mean number of juveniles a female produces each year.
+#' @param fixed_fecundity Logical. is fecundity fixed or drawn from a Poisson distribution
+#' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring. Must be between 0 and 1.
+#' @param adult_surv survival of adults across years. Must be between 0 and 1.
+#' @param immigration Yearly immigration, as a proportion of starting number of females (n_females). Must be between 0 and 1.
+#' @param p_polyandry Probability that a female has any polyandry. Must be between 0 and 1.
+#' @param p_sire Probability that 'social' male sires all offspring. Must be between 0 and 1.
+#' @param p_retain Probability that social partnership is retained. Must be between 0 and 1.
 #' @param	constant_pop Logical. Should there be stochastic variation in population size
 #' @param known_age_structure Currently not in use
-#' @param verbose logical - print simulation progress? useful for debugging
+#' @param verbose Logical - print simulation progress? useful for debugging
 
 
 #' @details ...
@@ -73,7 +73,6 @@ simulate_pedigree <- function(
 
   options(stringsAsFactors=FALSE) # as long as later version of R - dont need
 
-
 	## get environment, for transform det function
 	Renv <- environment()
 	
@@ -83,9 +82,15 @@ simulate_pedigree <- function(
 
 	lapply(c("p_breed", "adult_surv","juv_surv","immigration"),general_check, env=Renv, rate=TRUE, sex_specific=TRUE)
 
-	lapply(c("years", "n_females", "fecundity"), general_check, env=Renv, rate=FALSE, sex_specific=FALSE)
+	lapply(c("years", "n_females"), general_check, env=Renv, rate=FALSE, sex_specific=FALSE)
 
-	lapply(c("p_retain", "p_sire"), general_check, env=Renv, rate=TRUE, sex_specific=FALSE)
+	if(fixed_fecundity){
+		lapply("fecundity", general_check, env=Renv, rate=FALSE, sex_specific=FALSE)
+	}else{
+		if(x<0) stop("fecundity must be >=0")
+	}
+
+	lapply(c("p_retain", "p_sire","p_polyandry"), general_check, env=Renv, rate=TRUE, sex_specific=FALSE)
 
 	det_growth_rate_f <- (p_breed_f * juv_surv_f * fecundity)/2 + adult_surv_f + immigration_f
 
@@ -172,7 +177,7 @@ simulate_pedigree <- function(
 	if(verbose) cat("year ",year,": ")
 
 	####
-	# BREEDING FEMALE AND MALE, AND PAIRING
+	# BREEDING FEMALE AND MALE
 	####
 
 		# get vectors of females and males available to breed, accounting for the probability of females breeding
@@ -183,26 +188,30 @@ simulate_pedigree <- function(
 		breeding_females <- females[as.logical(stats::rbinom(length(females),1,p_breed_f))]
 
 		# dat[[year]][(match(females,dat[[year]]$animal)),"age"]
-
-		#work out number of pairs that can be formed 
-		n_pair <- length(breeding_females)#min(length(breeding_females),length(males))
-		# print(length(males))
-		# print(length(breeding_females))
-
 		
 		males <- subset(dat[[year]],sex=="M"& age>=afr_m)$animal
 		breeding_males <- males[as.logical(stats::rbinom(length(males),1,p_breed_m))]
 
 		if(verbose) cat("Breeding Individuals, ")
 ### maybe need something that says that if no breeding female skip offspring creation?
-		
+
+	####
+	# PAIRING
+	####
+
+		#work out number of pairs that can be formed 
+		n_pair <- length(breeding_females)#min(length(breeding_females),length(males))
+		# print(length(males))
+		# print(length(breeding_females))
+
+
 		### assign 'social' male
 		if(p_retain==0 || adult_surv==0 || year==1){ 
 			## when there is no pairing to be done, just take random males, :
 			social_male <- sample_males(breeding_females,breeding_males)
 		}else{
+			## MAKE VECTOR OF THOSE PAIRING UP AGAIN
 			social_male<-sapply(breeding_females,function(bf){
-				## MAKE VECTOR OF THOSE PAIRING UP AGAIN, then assign remaining males 
 				if(bf %in% pairs[[year-1]]$female
 				# female bred in the last year 
 				& pairs[[year-1]]$male[match(bf,pairs[[year-1]]$female)] %in% breeding_males
@@ -215,6 +224,7 @@ simulate_pedigree <- function(
 					NA
 				}
 			})
+			## Assign remaining males 
 			social_male[is.na(social_male)] <- sample_males(
 				females = breeding_females[is.na(social_male)], 
 				males = breeding_males, 
