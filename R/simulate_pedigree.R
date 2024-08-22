@@ -97,9 +97,11 @@ simulate_pedigree <- function(
 	# male growth rate probably doesn't matter as long as all eggs are fertilised? although at some point would run out of males
 	# det_growth_rate_m <- (p_breed_m *juv_surv_m * fecundity)/2 + adult_surv_m + immigration_m
 
-	if(det_growth_rate_f>1) warning("growth rate is more than 1") 
-  if(det_growth_rate_f<1) warning("growth rate is less than 1") 
-
+	if(!all.equal(det_growth_rate_f,1)){
+		if(det_growth_rate_f>1) warning("growth rate is more than 1") 
+	  if(det_growth_rate_f<1) warning("growth rate is less than 1") 	
+	}
+	
 	# v_as <- adult_surv * (1-adult_surv)
 	# v_imm <- immigration * (1-immigration)
 	# v_js <- juv_surv * (1-juv_surv)
