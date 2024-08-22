@@ -49,6 +49,23 @@
 	# constant_pop = TRUE 
 	# known_age_structure = FALSE
 
+	# 		set.seed(85)
+	# years = peds_param_reduced[k,"generations"]
+	# n_females = peds_param_reduced[k,"n_females"]
+	# fecundity = peds_param_reduced[k,"fecundity"]
+	# fixed_fecundity = TRUE
+	# p_sire = peds_param_reduced[k,"p_sire"]
+	# p_polyandry=1
+	# p_breed=1
+	# juv_surv = c(peds_param_reduced[k,"juv_surv_f"],peds_param_reduced[k,"juv_surv_m"])
+	# adult_surv = 0
+	# immigration = c(peds_param_reduced[k,"immigration_f"],peds_param_reduced[k,"immigration_m"])
+	# constant_pop = TRUE
+	# 	p_retain = 0
+	# afr=1
+	# verbose=TRUE
+
+
 ##  todo
 # sex specific rates
 # juvenile survival
@@ -172,7 +189,7 @@ simulate_pedigree <- function(
 	## stores male-female pairings across years
 	pairs <- list()
 
-	# year=1
+	# year=2
 	for(year in 1:years){
 		## import individuals that are around as adults pre-breeding (dat[[year]])
 
@@ -261,33 +278,34 @@ simulate_pedigree <- function(
 		}else{
 			stats::rpois(n_pair,fecundity)
 		}
-		
+		total_juv <- sum(n_juv)
+
 		if(verbose) cat("Eggs created, ")
 
 
 	####
-	# PATERNITY AND PEDIGREE CREATION
-	# CREATION OF NEW OFFSPRING
+	# PATERNITY ASSIGNMENT
 	####
 
 ### for each female
 ### start with 'social' male 
-### how many eggs does he sire of total, with probability p_polyandry
-### randomly choose a different male, with probability p_polyandry
+### how many eggs does he sire of total, with probability p_sire
+### randomly choose a different male, with probability p_sire
 ### how many of the remaining eggs does he sire
 ### continue until all eggs are sired		
 
-# print(year)
-		## make ped incorporating EPP and fecundity
-		ped <- if(sum(n_juv)>0){
-			data.frame(
-				animal=paste0(year,"_",1:sum(n_juv)),
-				# fecundity
-				dam=rep(breeding_females,n_juv),
 				# EPP
 				### can make this more efficient - if p_polyandry=0 then rep(social_male,n_juv)
 				#if p_polyandry==1 & p_sire==0 then sample(males,n_juv*length(breeding_females))
-				sire=c(
+
+
+		sires <- if(p_polyandry==0) {
+				rep(social_male,n_juv)
+			}else if(p_polyandry==1 & p_sire==0){
+				## should it use sample_male here, so that all males are sampled once, and then its random? because otherwise the p_breed doesn't work?
+				sample(breeding_males,n_juv*length(breeding_females), replace=TRUE)
+			}else{
+				c(
 					lapply(1:n_pair,function(i){
 					## probability of any EPP
 					polyandry <- stats::rbinom(1,1,p_polyandry)
@@ -295,12 +313,13 @@ simulate_pedigree <- function(
 						## if there is EPP, how much
 						## this is calculated by sampling how many of the offspring the paired male sired, and then giving the same probability to subsequent males. This means that extra pair males will be few, and have several offspring if p_sire if high - think this is more realistic
 						if(p_sire==0) {
+							## should each breeding male sire at least one? so use smaple_male?
 							sample(breeding_males,n_juv[i])
 						}else{
 							within_sires <- fill_sires(n_juv[i],p_sire)
 							if(length(within_sires)>0){
 								c(social_male[i], sample(breeding_males,max(within_sires)-1,replace=TRUE))[within_sires]
-								## have put replace=TRUE as if there are few males this might not work - some males might get chosen twice, but this will likely only happen when N is low, and so isnt unrealistic anyway
+								## have put replace=TRUE as if there are few males this might not work - some males might get chosen twice, but this will likely only happen when N is low, and so isn't unrealistic anyway
 							}else{ NULL }
 						}
 						# n_sired <- rbinom(1,n_juv[i],p_sire)
@@ -309,21 +328,40 @@ simulate_pedigree <- function(
 						rep(social_male[i],n_juv[i])
 					}
 				})
-					, recursive=TRUE),
+					, recursive=TRUE)
+
+			}
+
+	if(verbose) cat("Paternity Assigned, ")
+
+
+	####
+	# PEDIGREE CREATION
+	####
+
+		## make ped incorporating EPP and fecundity
+		ped <- if(total_juv>0){
+			data.frame(
+				#new animal ids 
+				animal = paste0(year,"_",1:total_juv),
+				# fecundity
+				dam = rep(breeding_females,n_juv),
+				sire = sires,
 				#equal sex ratio
-				sex=sample(c("M","F"),sum(n_juv),replace=TRUE),
-				cohort=year
+				sex = if(constant_pop){
+				# in fixed pop, need to create exact amounts, otherwise it might not work!
+					# bit convuluted, but makes sure there is the right number if there is an odd number of offspring
+					sample(rep(c("M","F"),ceiling(total_juv/2)),total_juv, replace=FALSE)
+				}else{
+					sample(c("M","F"),total_juv,replace=TRUE)
+				},
+				
+
+				cohort = year
 			)
 		}else{
 			NULL
 		}
-		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,3]))
-		# print(table(aggregate(animal~dam+cohort,pedigree, function(x)length(x))[,2]))
-		
-
-	if(verbose) cat("Offspring created, ")
-
-
 
 		## create individuals present in the next year
 
@@ -483,7 +521,6 @@ simulate_pedigree <- function(
 	if(verbose) cat("\n")
 
 	}
-
 	return(list(pedigree=pedigree,data_str=do.call(rbind,dat)))
 
 }
