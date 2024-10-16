@@ -1,12 +1,12 @@
-Package: squidPed
+Package: pedAgree
 Title: Demographically explicit pedigree simulation
-Version: 0.0.0.9000
+Version: 0.0.1.0
 Authors@R: 
     person("Joel", "Pick", email = "joel.l.pick@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: A simulation based tool to generate demographically realistic pedigrees through the use of individual based simulations.
-URL: https://github.com/squidgroup/squidPed
-BugReports: https://github.com/squidgroup/squidPed/issues
+URL: https://github.com/squidgroup/pedAgree
+BugReports: https://github.com/squidgroup/pedAgree/issues
 License: MIT + file LICENSE
 Imports:
     stats,
