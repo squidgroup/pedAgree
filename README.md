@@ -1,11 +1,11 @@
-# squidPed
+# pedAgree
 (soon-to-be) R package for pedigree simulations
 
 ## Installation
 
 ```
-devtools::install_github("squidgroup/squidPed")
-library(squidPed)
+devtools::install_github("squidgroup/pedAgree")
+library(pedAgree)
 ```
 
 ## Use
