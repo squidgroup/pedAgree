@@ -4,6 +4,11 @@ Version: 0.0.1.0
 Authors@R: 
     person("Joel", "Pick", email = "joel.l.pick@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
+c(
+    person("Joel", "Pick"           , email = "joel.l.pick@gmail.com", role = c("aut","cre"), comment = c(ORCID = "YOUR-ORCID-ID")),
+    person("Barbara", "Class"        , email = "barbara.a.class@gmail.com", role = "aut"),
+    person("Yimen", "Araya-Ajoy"        , email = "yimencr@gmail.com", role = "aut")
+)
 Description: A simulation based tool to generate demographically realistic pedigrees through the use of individual based simulations.
 URL: https://github.com/squidgroup/pedAgree
 BugReports: https://github.com/squidgroup/pedAgree/issues
