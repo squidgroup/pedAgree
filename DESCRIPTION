@@ -2,8 +2,6 @@ Package: pedAgree
 Title: Demographically explicit pedigree simulation
 Version: 0.0.1.0
 Authors@R: 
-    person("Joel", "Pick", email = "joel.l.pick@gmail.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
 c(
     person("Joel", "Pick"           , email = "joel.l.pick@gmail.com", role = c("aut","cre"), comment = c(ORCID = "YOUR-ORCID-ID")),
     person("Barbara", "Class"        , email = "barbara.a.class@gmail.com", role = "aut"),
