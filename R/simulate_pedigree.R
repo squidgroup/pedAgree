@@ -5,12 +5,12 @@
 #' @param years Integer. Number of time steps/synchronous reproductive events
 #' @param n_females Integer. Starting number of breeding females
 #' @param afr Integer. Age at first reproduction
-#' @param p_breed Probability that a female breeds, must be between 0 and 1.
+#' @param p_breed Probability that a female breeds, must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).
 #' @param fecundity Mean number of juveniles a female produces each year.
 #' @param fixed_fecundity Logical. is fecundity fixed or drawn from a Poisson distribution
-#' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring. Must be between 0 and 1.
-#' @param adult_surv survival of adults across years. Must be between 0 and 1.
-#' @param immigration Yearly immigration, as a proportion of starting number of females (n_females). Must be between 0 and 1.
+#' @param juv_surv survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring. Must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).
+#' @param adult_surv survival of adults across years. Must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).
+#' @param immigration Yearly immigration, as a proportion of starting number of females (n_females). Must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).
 #' @param p_polyandry Probability that a female has any polyandry. Must be between 0 and 1.
 #' @param p_sire Probability that 'social' male sires all offspring. Must be between 0 and 1.
 #' @param p_retain Probability that social partnership is retained. Must be between 0 and 1.

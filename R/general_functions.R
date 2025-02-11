@@ -2,7 +2,7 @@ exp2lat<- function(mean,cov){
 	mean <- as.matrix(mean)
 	cov <- as.matrix(cov)
 	
-	mean_out <- rep(NA,2)
+	mean_out <- rep(NA,nrow(cov),ncol(cov))
 	for(i in 1:nrow(cov)) mean_out[i] <- log(mean[i]^2/sqrt(mean[i]^2+cov[i,i]))
 	
 	cov_out <- matrix(NA,nrow(cov),ncol(cov))
@@ -17,7 +17,7 @@ lat2exp<- function(mean,cov){
 	mean <- as.matrix(mean)
 	cov <- as.matrix(cov)
 	
-	mean_out <- rep(NA,2)
+	mean_out <- rep(NA,nrow(cov),ncol(cov))
 	for(i in 1:nrow(cov)) mean_out[i] <- exp(mean[i]+ cov[i,i]/2)
 
 	cov_out <- matrix(NA,nrow(cov),ncol(cov))

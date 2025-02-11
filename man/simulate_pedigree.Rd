@@ -23,35 +23,35 @@ simulate_pedigree(
 )
 }
 \arguments{
-\item{years}{number of time steps}
+\item{years}{Integer. Number of time steps/synchronous reproductive events}
 
-\item{n_females}{starting number of breeding females}
+\item{n_females}{Integer. Starting number of breeding females}
 
-\item{afr}{age at first reproduction}
+\item{afr}{Integer. Age at first reproduction}
 
-\item{p_breed}{probability that a female breeds}
+\item{p_breed}{Probability that a female breeds, must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).}
 
-\item{fecundity}{number of juveniles a female produces each year}
+\item{fecundity}{Mean number of juveniles a female produces each year.}
 
-\item{fixed_fecundity}{logical. is fecundity fixed or drawn from a Poisson distribution}
+\item{fixed_fecundity}{Logical. is fecundity fixed or drawn from a Poisson distribution}
 
-\item{p_polyandry}{probability that a female has any polyandry}
+\item{p_polyandry}{Probability that a female has any polyandry. Must be between 0 and 1.}
 
-\item{p_sire}{probability that 'social' male sires all offspring}
+\item{p_sire}{Probability that 'social' male sires all offspring. Must be between 0 and 1.}
 
-\item{p_retain}{probability that social partnership is retained}
+\item{p_retain}{Probability that social partnership is retained. Must be between 0 and 1.}
 
-\item{juv_surv}{survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring}
+\item{juv_surv}{survival of juveniles until local recruitment, where recruitment is defined as having genetic offspring. Must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).}
 
-\item{adult_surv}{survival of adults across years}
+\item{adult_surv}{survival of adults across years. Must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).}
 
-\item{immigration}{yearly immigration, as a proportion of starting number of females (n_females)}
+\item{immigration}{Yearly immigration, as a proportion of starting number of females (n_females). Must be between 0 and 1. Can be sex-specific if entered as a vector of length 2 (female,male).}
 
 \item{constant_pop}{Logical. Should there be stochastic variation in population size}
 
 \item{known_age_structure}{Currently not in use}
 
-\item{verbose}{logical - print simulation progress? useful for debugging}
+\item{verbose}{Logical - print simulation progress? useful for debugging}
 }
 \value{
 A list with two elements: population data and a pedigree
