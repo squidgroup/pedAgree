@@ -13,7 +13,7 @@ library(pedAgree)
 Just one function exported at the moment `simulate_pedigree()`. This takes a bunch of parameters (many can be sex specific), to generate stochastic pedigrees via individual based simulations.
 
 ### Pedigree Size
-- **Integer**: Number of time steps/synchronous reproductive events
+- **years**: Number of time steps/synchronous reproductive events
 - **n_females**: Starting number of breeding females
 -	**constant_pop**: Should there be stochastic variation in population size? (Logical)
 
