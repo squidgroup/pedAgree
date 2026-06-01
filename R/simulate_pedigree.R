@@ -32,20 +32,19 @@
 ## what do we output - how do we incorporate alive individuals that don't breed or multiple measurements
 ## output pedigree and data structure?
 
-	# years = 5
-	# n_females = 10
-
+	# years = 20
+	# n_females = 250
 	# p_breed = 1
-	# juv_surv = 0.25
-	# adult_surv = 0.5
+	# juv_surv = 0.5
+	# adult_surv = 0
 	# immigration = 0
 	# afr=1
-
+  # fixed_fecundity=FALSE
 	# fecundity = 4
 	# p_sire = 1
 	# p_retain = 0.8
+  # p_polyandry=1
 	# polgyny_rate = 0
-
 	# constant_pop = TRUE 
 	# known_age_structure = FALSE
 
@@ -104,7 +103,7 @@ simulate_pedigree <- function(
 	if(fixed_fecundity){
 		lapply("fecundity", general_check, env=Renv, rate=FALSE, sex_specific=FALSE)
 	}else{
-		if(x<0) stop("fecundity must be >=0")
+		if(fecundity<0) stop("fecundity must be >=0")
 	}
 
 	lapply(c("p_retain", "p_sire","p_polyandry"), general_check, env=Renv, rate=TRUE, sex_specific=FALSE)
